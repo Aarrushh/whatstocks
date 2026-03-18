@@ -1,0 +1,2 @@
+CREATE CONSTRAINT FOR (c:Country) REQUIRE c.country_code IS UNIQUE;
+CREATE CONSTRAINT FOR (s:Sector) REQUIRE s.sector_id IS UNIQUE;
