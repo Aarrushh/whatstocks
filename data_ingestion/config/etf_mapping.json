@@ -1,0 +1,27 @@
+{
+  "USA": {
+    "Broad_Market": "SPY",
+    "Tech_Sector": "XLK",
+    "Energy_Sector": "XLE"
+  },
+  "CHN": {
+    "Broad_Market": "MCHI",
+    "Tech_Sector": "CQQQ",
+    "Energy_Sector": "CHIE"
+  },
+  "IND": {
+    "Broad_Market": "INDA",
+    "Tech_Sector": "INPT",
+    "Energy_Sector": "none"
+  },
+  "DEU": {
+    "Broad_Market": "EWG",
+    "Tech_Sector": "none",
+    "Energy_Sector": "none"
+  },
+  "BRA": {
+    "Broad_Market": "EWZ",
+    "Tech_Sector": "none",
+    "Energy_Sector": "none"
+  }
+}
