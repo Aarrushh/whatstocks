@@ -1,11 +1,14 @@
 services:
-  redis:
-    image: redis:alpine
+  neo4j:
+    image: neo4j:latest
+    container_name: neo4j_community
     ports:
-      - "6379:6379"
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password
     volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
+      - neo4j_data:/data
 
 volumes:
-  redis_data:
+  neo4j_data:
