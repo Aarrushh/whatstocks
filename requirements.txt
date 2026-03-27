@@ -1,0 +1,10 @@
+pytest
+pytest-cov
+flake8
+sqlalchemy
+pandas
+requests
+yfinance
+spacy
+transformers
+pycountry
