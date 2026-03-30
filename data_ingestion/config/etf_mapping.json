@@ -1,0 +1,37 @@
+{
+  "USA": {
+    "Broad_Market": "SPY",
+    "Tech_Sector": "XLK",
+    "Energy_Sector": "XLE",
+    "Financial_Sector": "XLF",
+    "Healthcare_Sector": "XLV"
+  },
+  "CHN": {
+    "Broad_Market": "MCHI",
+    "Tech_Sector": "CQQQ",
+    "Energy_Sector": "CHIE",
+    "Financial_Sector": "CHIX",
+    "Healthcare_Sector": "CHIH"
+  },
+  "IND": {
+    "Broad_Market": "INDA",
+    "Tech_Sector": "INPT",
+    "Energy_Sector": "None",
+    "Financial_Sector": "IXG",
+    "Healthcare_Sector": "None"
+  },
+  "DEU": {
+    "Broad_Market": "EWG",
+    "Tech_Sector": "None",
+    "Energy_Sector": "None",
+    "Financial_Sector": "None",
+    "Healthcare_Sector": "None"
+  },
+  "BRA": {
+    "Broad_Market": "EWZ",
+    "Tech_Sector": "None",
+    "Energy_Sector": "None",
+    "Financial_Sector": "None",
+    "Healthcare_Sector": "None"
+  }
+}
