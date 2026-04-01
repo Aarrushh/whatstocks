@@ -1,5 +1,5 @@
 from sqlalchemy import Column, Integer, String, Float, DateTime
-from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm import declarative_base, validates
 import datetime
 
 Base = declarative_base()
@@ -14,6 +14,24 @@ class MacroData(Base):
     date = Column(
         DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
     )
+
+
+class CountryStrengthScore(Base):
+    __tablename__ = "country_strength_score"
+
+    id = Column(Integer, primary_key=True, index=True)
+    date = Column(
+        DateTime, default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    country_code = Column(String, index=True, nullable=False)
+    indicator_name = Column(String, index=True, nullable=False)
+    score = Column(Float, nullable=False)
+
+    @validates('score')
+    def validate_score(self, key, score):
+        if not (0.0 <= score <= 100.0):
+            raise ValueError("Score must be between 0.0 and 100.0")
+        return score
 
 
 class NewsData(Base):
