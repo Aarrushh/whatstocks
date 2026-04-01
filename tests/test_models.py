@@ -1,7 +1,7 @@
 import pytest
 from sqlalchemy.orm import sessionmaker
 from database.config import get_engine
-from database.models import Base, MacroData, NewsData, MarketData
+from database.models import Base, MacroData, NewsData, MarketData, CountryStrengthScore
 
 
 @pytest.fixture(scope="module")
@@ -51,3 +51,38 @@ def test_market_data_creation(session):
     retrieved = session.query(MarketData).filter_by(ticker="SPY").first()
     assert retrieved is not None
     assert retrieved.price == 500.0
+
+
+def test_country_strength_score_creation(session):
+    score = CountryStrengthScore(
+        country_code="USA",
+        indicator_name="GDP_Growth",
+        score=85.5
+    )
+    session.add(score)
+    session.commit()
+
+    retrieved = session.query(CountryStrengthScore).filter_by(
+        country_code="USA", indicator_name="GDP_Growth"
+    ).first()
+
+    assert retrieved is not None
+    assert retrieved.score == 85.5
+
+
+def test_country_strength_score_validation(session):
+    # Test lower bound
+    with pytest.raises(ValueError, match="Score must be between 0.0 and 100.0"):
+        score = CountryStrengthScore(
+            country_code="USA",
+            indicator_name="GDP_Growth",
+            score=-5.0
+        )
+
+    # Test upper bound
+    with pytest.raises(ValueError, match="Score must be between 0.0 and 100.0"):
+        score = CountryStrengthScore(
+            country_code="USA",
+            indicator_name="GDP_Growth",
+            score=105.0
+        )
