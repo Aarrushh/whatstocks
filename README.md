@@ -5,11 +5,12 @@ will happen in the world. The dashboard shows how your money lines up with
 that, reads the day's news against it, and scores your calls over time.
 
 Your own AI assistant (Claude Code) runs it on your own machine. There is
-no server and no account, and your files never leave your computer except
-as percentages (see below).
+no server and no account, and your amounts never leave your computer (see
+[What leaves your computer](#what-leaves-your-computer)).
 
-> **Status: spec draft.** Nothing runs yet. Read [docs/SPEC.md](docs/SPEC.md)
-> for the design, and [demo/](demo/) for what your files will look like.
+> **Status: early skeleton (v0.1).** The whole pipeline runs on the demo
+> user, and the tests pass offline. Expect rough edges. The design is in
+> [docs/SPEC.md](docs/SPEC.md).
 
 ## What you see each morning
 
@@ -38,7 +39,7 @@ fixed way to read one.
 - State a fact without a link to a source that the code fetched itself.
 - Change your views for you. It shows evidence, and you decide.
 
-## How it will work (planned)
+## How it works
 
 You need [uv](https://docs.astral.sh/uv/) and
 [Claude Code](https://claude.com/claude-code). uv installs the right Python
@@ -54,7 +55,57 @@ claude
 ```
 
 `/setup` creates a `my/` folder. Git ignores it, so your own data never ends
-up in a commit.
+up in a commit. `/morning` runs `whatstocks prepare`, has Claude write the
+brief from the payload, then runs `whatstocks finish` and gives you
+`my/out/dashboard.html`.
+
+### Try the demo first
+
+The demo is a fictional euro-based investor with three views and three
+logged trades.
+
+```text
+uv run whatstocks --dir demo prepare
+uv run whatstocks --dir demo finish --no-brief
+```
+
+Then open `demo/out/dashboard.html`. Inside Claude Code, ask for
+"/morning on the demo folder" to get the brief as well.
+
+## What leaves your computer
+
+| Goes to | What | Why |
+|---|---|---|
+| Yahoo Finance | The ticker symbols you hold, plus the theme proxy ETFs | Daily prices |
+| European Central Bank | Currency codes | Exchange rates |
+| iShares | A request for the MSCI ACWI holdings file | Looking through funds |
+| News feeds and Google News | The theme search queries in `themes/themes.yaml` | The day's news |
+| Your AI (Claude) | Tickers, portfolio percentages, your open views, headlines | Writing the brief |
+
+Quantities, amounts and account names stay on disk. A check in code stops
+the run if any of them would reach the AI.
+
+## Known limits
+
+- The world benchmark and Vanguard All-World funds are looked through with
+  the iShares MSCI ACWI file. The Vanguard match is an approximation, and
+  the page says so.
+- Yahoo prices are free but unofficial. When they fail, the page uses the
+  last cached prices and shows a banner.
+- The theme map is a judgment call, written down where you can see it and
+  change it. Partial members count half.
+- Theme betas from calm years understate how closely things move together
+  in a real crash.
+
+## Development
+
+```text
+uv run pytest
+```
+
+The tests run offline, with synthetic prices, holdings files and news. To
+add a fund that can be looked through, add it to `sources/funds.yaml`. To
+add a theme or a company, edit `themes/themes.yaml`.
 
 ## Not financial advice
 

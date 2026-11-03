@@ -23,9 +23,9 @@ These are rules, not goals. Each one has a check in code (section 8).
 
 | # | Rule | Why |
 |---|---|---|
-| P1 | The user writes the views. The AI never creates, edits or re-rates a view. | Accountability only works if the calls are the user's own. |
+| P1 | The user owns the views. The AI may draft the wording for the user to approve, but it never sets, suggests or changes a probability, and never edits a view on its own. | Accountability only works if the calls are the user's own. |
 | P2 | Code computes every number. The AI only writes words. | The same input files must always give the same numbers. |
-| P3 | Every factual claim in the brief cites a news item that the code fetched. The AI cannot introduce a URL. | This stops invented sources. |
+| P3 | Every factual claim in the brief cites a news item that the code fetched, by id. The AI never sees a URL and cannot introduce one. | This stops invented sources. |
 | P4 | The AI sees tickers and portfolio percentages, never quantities or money amounts. | Privacy. Amounts stay on disk. |
 | P5 | Every exposure number is shown next to the same number for a world index fund. | "12% AI" means nothing without "the world is 30%". |
 | P6 | The tool describes, and never recommends. It does not say buy, sell, add, avoid or "you should", and gives no price targets. | Personal recommendations are regulated. This tool is not that. |
@@ -116,9 +116,11 @@ user confirms or corrects it. The outcome is written once and then scored.
 whatstocks/
   README.md
   LICENSE                  MIT
-  pyproject.toml           uv project (later)
-  docs/SPEC.md
+  pyproject.toml           uv project
+  docs/SPEC.md, docs/DATA_SOURCES.md
   themes/themes.yaml       shipped starter theme map, community-maintained
+  sources/funds.yaml       funds that can be looked through, and where their holdings files are
+  sources/feeds.yaml       news feeds, and the search used for each theme's news_query
   demo/                    a complete fictional user, used for first run and tests
     settings.yaml
     holdings.csv
@@ -132,9 +134,20 @@ whatstocks/
     themes.yaml            optional: the user's additions and overrides
     cache/                 prices, FX, fund holdings, news
     out/                   exposure.json, brief.json, evidence.jsonl, dashboard.html
-  .claude/skills/          setup, morning, decide, resolve (later)
-  src/                     code (later)
+  .claude/skills/          setup, morning (decide and resolve are covered inside setup for now)
+  src/whatstocks/          code: files, market, funds, exposure, news, brief, record, render, morning, cli
+  tests/                   offline tests with synthetic prices, holdings files and news
 ```
+
+Commands (the skills run these):
+
+| Command | What it does |
+|---|---|
+| `uv run whatstocks check` | Check the files in `my/` and list stocks that are in no theme. |
+| `uv run whatstocks prepare` | Steps 1 to 6 of section 8: data in, `payload.json` out. `--offline` uses the cache only. |
+| `uv run whatstocks finish` | Steps 8 to 11: check `brief.json`, update the evidence log, build the page. `--no-brief` skips the brief. |
+
+Every command takes `--dir <folder>` (default `my`), so `--dir demo` runs the demo user.
 
 ## 6. File formats
 
@@ -244,6 +257,7 @@ themes:
     label: AI build-out
     description: Companies whose revenue depends on AI data-centre spending.
     proxy: SOXX                    # ETF used for theme beta and worst weeks
+    news_query: '"AI data center" OR "AI chips"'  # the only text sent to the news search
     members:
       core: [NVDA, AVGO, ...]      # counts 1.0 toward theme share
       partial: [MSFT, GOOGL, ...]  # counts 0.5
@@ -256,6 +270,7 @@ Rules:
 - A company can sit in more than one theme.
 - The top-level `aliases:` map lists other lines of the same company, for example `TSM: [2330.TW]`. Index funds usually hold the home-market line. List each company once under `members` and put its other lines in `aliases`.
 - Every member added by the AI carries a `reason` in `my/themes.yaml`.
+- `news_query` is sent to the news search engine as it is. Keep it about the theme; never put a holding or a view in it.
 
 ## 7. Calculations
 
@@ -264,7 +279,7 @@ All of these are code. None is done by the AI.
 ### 7.1 Values and look-through
 
 - **Value** = quantity × latest close, converted to home currency at the ECB reference rate. `value` rows are converted the same way.
-- **Look-through**: each fund's value is spread across its constituents using the issuer's published holdings file. The run uses the top 200 constituents, or all of them if there are fewer, and puts the remainder in "rest of fund (untagged)". A holdings file older than 90 days is flagged.
+- **Look-through**: each fund's value is spread across its constituents using the issuer's published holdings file. The run uses every constituent. Rows that are not equities (cash, futures, FX) are grouped as "Cash and other". A fund held inside a fund is looked through when the inner fund is listed in `sources/funds.yaml` with its `lines`, up to three levels deep; otherwise its value is shown as not looked through, and the data notes name it. A holdings file older than 90 days is flagged.
 - **Matching** (from the [source check](DATA_SOURCES.md)):
   - Match a constituent to a theme member on ticker **and** exchange, never on ticker alone (`BA.L` is not `BA`).
   - Exchange names are mapped per issuer file, because the same exchange can appear under different names.
@@ -322,19 +337,21 @@ Flags are shown, never blocking:
 
 ## 8. The `/morning` pipeline
 
+Steps 1 to 6 are `whatstocks prepare`, step 7 is the user's AI, and steps 8 to 11 are `whatstocks finish`.
+
 | Step | Who | What | Check |
 |---|---|---|---|
 | 1 | code | Load and validate the `my/` files. | Stop with a row or line number on any error. |
 | 2 | code | Refresh prices and FX into the cache. If a source fails, keep the last cached values. | Show a "prices from <date>" banner when any price is older than the last trading day. Stop only when a holding has no cached price at all. |
 | 3 | code | Refresh fund holdings files when they are older than 30 days. | Flag files older than 90 days. |
 | 4 | code | Compute exposure (section 7) into `exposure.json`. | Theme shares within [0, 1], and the benchmark computed too. |
-| 5 | code | Fetch news for themes, holdings and view keywords into `news.json`, with stable ids and URLs. | Deduplicate by URL and title. |
-| 6 | code | Build the AI payload: news items, tickers with portfolio %, the theme map, and views (statement, current probability, themes). | **Payload check**: no quantities or amounts. Any number in the payload must be a percentage, a date, or appear in the source text. |
-| 7 | AI | Write `brief.json`: events with `news_ids`, the four answers, `view_effects` (`for`, `against`, `unclear`), and blind spots. | Must match a JSON schema. |
-| 8 | code | Validate the brief. | Every event cites at least one existing `news_id`. Only URLs from `news.json` are allowed. A banned-phrase scan (buy, sell, "you should", target price, and others) leads to one retry, and then the brief is shown with a warning banner. |
-| 9 | code | Append to `evidence.jsonl`. | Append only. |
+| 5 | code | Fetch news into `news.json`: the publisher feeds, plus one search per theme built from its `news_query`. Each item gets a stable id (a hash of its URL). | Deduplicate by URL and title. Only theme queries go to the search engine, never holdings or views. |
+| 6 | code | Build the AI payload: news items (id, title, source, time, no URL), tickers with portfolio %, the themes with your share and the world's, and open views (statement, current probability, themes). | **Payload check**: no money fields, and none of the user's amounts or quantities written anywhere outside public text such as headlines. |
+| 7 | AI | Write `brief.json`: a summary, and events with `news_ids` and the four answers (`what`, `money`, `touches`, and `views` with `for`, `against` or `unclear` and a `why`). The format is in `.claude/skills/morning/SKILL.md`. | Checked in step 8. Blind spots are computed in code, not by the AI. |
+| 8 | code | Validate the brief. | Every event cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. |
+| 9 | code | Append today's events to `evidence.jsonl`. | Earlier days are never changed. A re-run on the same day replaces that day's entries. |
 | 10 | code | Render `dashboard.html` from a template. | The page works offline, with no external scripts. |
-| 11 | code | List the views that are due to be resolved. | — |
+| 11 | code | Mark the views that are past their `resolves_by` date. | — |
 
 The AI is the user's own Claude, running inside Claude Code. The tool needs
 no API key of its own, and the user pays their own model usage.

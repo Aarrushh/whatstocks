@@ -4,3 +4,10 @@ my/
 .env
 __pycache__/
 .venv/
+
+# Built by whatstocks when run on the demo.
+demo/cache/
+demo/out/
+
+# Local tool state.
+.serena/

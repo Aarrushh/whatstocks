@@ -1,0 +1,37 @@
+# Funds whatstocks can look through (docs/SPEC.md 7.1).
+#
+# holdings_url      an issuer's daily holdings CSV (iShares format)
+# lookthrough_with  use another fund's holdings file: for a fund tracking the same
+#                   index, or an approximation that the label says out loud
+# label             shown in the dashboard's data notes, so the user knows
+# lines             [[ticker, exchange]] as this fund appears inside other funds'
+#                   files, so a fund held by a fund is looked through too
+#
+# The benchmark uses the US iShares ACWI file: it holds Indian and Chinese A-share
+# companies directly. The UCITS files hold them through other funds, which hides them.
+funds:
+  ACWI:
+    name: iShares MSCI ACWI ETF
+    holdings_url: https://www.ishares.com/us/products/239600/ishares-msci-acwi-etf/latest-holdings.csv
+
+  IUSQ.DE:
+    name: iShares MSCI ACWI UCITS ETF (Acc)
+    lookthrough_with: ACWI
+    label: looked through with the US ACWI fund, which tracks the same index (MSCI ACWI)
+  SSAC.L:
+    name: iShares MSCI ACWI UCITS ETF (Acc)
+    lookthrough_with: ACWI
+    label: looked through with the US ACWI fund, which tracks the same index (MSCI ACWI)
+
+  VWCE.DE:
+    name: Vanguard FTSE All-World UCITS ETF (Acc)
+    lookthrough_with: ACWI
+    label: approximated with MSCI ACWI; Vanguard's holdings file is not supported yet
+  VWRL.L:
+    name: Vanguard FTSE All-World UCITS ETF (Dist)
+    lookthrough_with: ACWI
+    label: approximated with MSCI ACWI; Vanguard's holdings file is not supported yet
+  VWRA.L:
+    name: Vanguard FTSE All-World UCITS ETF (Acc, USD)
+    lookthrough_with: ACWI
+    label: approximated with MSCI ACWI; Vanguard's holdings file is not supported yet

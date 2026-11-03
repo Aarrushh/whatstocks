@@ -1,0 +1,22 @@
+# News for the morning brief (docs/SPEC.md section 9).
+#
+# feeds   publisher RSS feeds, read as they are
+# search  one search per theme, built from each theme's news_query. Only the
+#         theme query is sent; never a holding name, a view or an amount.
+feeds:
+  - name: BBC Business
+    url: https://feeds.bbci.co.uk/news/business/rss.xml
+  - name: BBC World
+    url: https://feeds.bbci.co.uk/news/world/rss.xml
+  - name: Al Jazeera
+    url: https://www.aljazeera.com/xml/rss/all.xml
+  - name: CNBC World
+    url: https://www.cnbc.com/id/100727362/device/rss/rss.html
+  - name: Guardian Business
+    url: https://www.theguardian.com/uk/business/rss
+  - name: Economic Times Markets
+    url: https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms
+
+search:
+  enabled: true
+  url: https://news.google.com/rss/search?q={query}+when:1d&hl=en-GB&gl=GB&ceid=GB:en

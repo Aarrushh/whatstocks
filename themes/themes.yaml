@@ -2,6 +2,7 @@
 # additions for the user's own holdings, with a reason, and the user confirms.
 # Symbols are Yahoo-style. Members are companies only; funds are looked through.
 # core counts 1.0 toward theme share, partial counts 0.5 (docs/SPEC.md 7.2).
+# news_query is the only text sent to the news search engine: never a holding name.
 version: 1
 
 # Other lines of the same company. Index funds usually hold the home-market
@@ -25,6 +26,7 @@ themes:
       Companies whose revenue depends on AI data-centre spending: chips,
       chip equipment, networking, servers and data-centre power.
     proxy: SOXX
+    news_query: '"AI data center" OR "AI chips" OR hyperscaler capex'
     members:
       core: [NVDA, AVGO, AMD, TSM, ASML.AS, MU, ANET, VRT]
       partial: [MSFT, GOOGL, GOOG, AMZN, META, ORCL]
@@ -37,6 +39,7 @@ themes:
     label: Defence
     description: Companies whose main customers are defence ministries.
     proxy: ITA
+    news_query: 'defence spending OR defense budget OR NATO'
     members:
       core: [LMT, NOC, RTX, GD, LHX, BA.L, RHM.DE, SAAB-B.ST, LDO.MI, HO.PA, HAG.DE]
       partial: [AIR.PA, SAF.PA, BA]
@@ -45,6 +48,7 @@ themes:
     label: Oil and gas
     description: Producers and integrated oil companies whose profits follow the oil and gas price.
     proxy: XLE
+    news_query: '"oil price" OR Brent OR OPEC'
     members:
       core: [XOM, CVX, COP, SHEL.L, BP.L, TTE.PA, EQNR.OL, ENI.MI]
       partial: [RELIANCE.NS]
@@ -55,6 +59,7 @@ themes:
       Grid equipment, cables and electrification, which gain from both data
       centres and the energy transition.
     proxy: GRID
+    news_query: '"power grid" OR "grid investment" OR electrification'
     members:
       core: [ETN, GEV, PWR, SU.PA, PRY.MI, ABBN.SW]
       partial: [SIE.DE, VRT]
@@ -63,6 +68,7 @@ themes:
     label: Gold
     description: Gold miners and royalty companies, which move with the gold price.
     proxy: GLD
+    news_query: '"gold price" OR "central bank gold"'
     members:
       core: [NEM, AEM, GFI, FNV]
       partial: []
@@ -71,6 +77,7 @@ themes:
     label: India growth
     description: Large companies listed and based in India.
     proxy: INDA
+    news_query: 'India economy OR RBI OR Sensex'
     members:
       core: [RELIANCE.NS, HDFCBANK.NS, ICICIBANK.NS, INFY.NS, TCS.NS, BHARTIARTL.NS, LT.NS]
       partial: []
@@ -83,6 +90,7 @@ themes:
     label: China
     description: Large companies listed and based in China or Hong Kong.
     proxy: MCHI
+    news_query: 'China economy OR Beijing stimulus OR "Hang Seng"'
     members:
       core: [BABA, 0700.HK, JD, BIDU, 1211.HK, 3690.HK]
       partial: []
@@ -95,6 +103,7 @@ themes:
       governments treat as strategic, where export controls and supply deals
       move prices.
     proxy: REMX
+    news_query: '"rare earths" OR "critical minerals" OR lithium'
     members:
       core: [MP, LYC.AX, ILU.AX, ALB, SQM]
       partial: [FCX, GLEN.L]
@@ -108,6 +117,7 @@ themes:
       Uranium miners, fuel enrichment, reactor components and nuclear-heavy
       power producers.
     proxy: URA
+    news_query: 'uranium OR "nuclear power" OR enrichment'
     members:
       core: [CCJ, KAP.L, NXE, UEC, LEU, BWXT, CEG]
       partial: [RR.L]
@@ -122,6 +132,7 @@ themes:
       freight rates and with disruption at chokepoints (Red Sea, Hormuz,
       Panama, Taiwan Strait).
     proxy: BDRY
+    news_query: '"Red Sea" shipping OR "Strait of Hormuz" OR "freight rates"'
     members:
       core: [MAERSK-B.CO, HLAG.DE, ZIM, 1919.HK, FRO, STNG, SBLK]
       partial: [KNIN.SW, DSV.CO]
