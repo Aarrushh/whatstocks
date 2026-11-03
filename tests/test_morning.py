@@ -38,6 +38,14 @@ def test_prepare_then_finish(user, fake_world):
     assert 'href="https://example.com/opec"' in page
     assert "OPEC+ extended its output cuts into 2027." in page
 
+    assert json.loads((user.out / "briefs" / f"{TODAY.isoformat()}.json").read_text("utf-8")) == good_brief()
+    perf = json.loads((user.out / "performance.json").read_text("utf-8"))
+    assert perf["date"] == TODAY.isoformat() and perf["lines"]["portfolio"][0][1] == 100.0
+    assert set(perf["returns"]["holdings"]) == {"VWCE.DE", "NVDA", "ASML.AS", "RHM.DE", "SHEL.L", "INFY.NS"}  # not cash
+    look = json.loads((user.out / "lookthrough.json").read_text("utf-8"))
+    assert sum(row[1] for row in look["you"]) == pytest.approx(1.0, abs=1e-6)
+    assert {row[0] for row in look["you"]} == set(weights)
+
     evidence = (user.out / "evidence.jsonl").read_text("utf-8").splitlines()
     assert len(evidence) == 2
     morning.finish(user, today=TODAY)  # a re-run replaces today's lines
@@ -79,8 +87,11 @@ def test_finish_checks_the_brief(user, fake_world):
 
 def test_finish_without_a_brief(user, fake_world):
     morning.prepare(user, today=TODAY)
+    write_brief(user, good_brief())
+    morning.finish(user, today=TODAY)
     page = morning.finish(user, no_brief=True, today=TODAY).read_text("utf-8")
     assert "No morning brief today" in page and "No brief today." in page
+    assert not (user.out / "briefs" / f"{TODAY.isoformat()}.json").exists()
 
 
 def test_blind_spots():

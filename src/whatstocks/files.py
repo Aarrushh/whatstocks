@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import csv
 import datetime as dt
+import json
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -24,6 +25,17 @@ class Problems(Exception):
         super().__init__("\n".join(problems))
         self.problems = problems
 
+
+def read_json(path: Path):
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except json.JSONDecodeError as e:
+        raise Problems([f"{path.name} line {e.lineno}: not valid JSON ({e.msg})"]) from None
+
+
+def write_json(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), "utf-8")
 
 @dataclass
 class Settings:

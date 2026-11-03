@@ -80,11 +80,44 @@ def fake_rates(currencies) -> pd.DataFrame:
     return pd.DataFrame({c: base[c] for c in currencies}, index=DAYS)
 
 
+THEME_IDS = ("ai_buildout", "defence", "oil_gas", "power_grid", "gold", "india", "china", "critical_minerals",
+             "nuclear_uranium", "shipping_routes")
+THEME_NEWS = {
+    "oil_gas": ("OPEC+ kept supply tight into 2027.", "Shell sits in this theme, and so does a slice of the world index.",
+                ["aaaaaaaaaa"]),
+    "ai_buildout": ("Two hyperscalers trimmed their 2027 capex guidance.",
+                    "NVIDIA and ASML sit in this theme, and one of your views rests on it.", ["bbbbbbbbbb"]),
+    "gold": ("Central banks kept buying and gold hit a record.", "You hold almost none of it.", ["cccccccccc"]),
+}
+
+
+def theme_notes() -> list[dict]:
+    """A line for every theme: a brief must cover each theme the user holds 2% of, or an open view names."""
+    return [
+        {"id": tid, "state": THEME_NEWS[tid][0], "why_it_matters": THEME_NEWS[tid][1], "news_ids": THEME_NEWS[tid][2]}
+        if tid in THEME_NEWS else
+        {"id": tid, "state": "No news in today's feeds.", "why_it_matters": "Part of your portfolio sits in it.", "news_ids": []}
+        for tid in THEME_IDS
+    ]
+
+
+def quiet_brief(day: dt.date = TODAY) -> dict:
+    return {"date": day.isoformat(), "events": [], "quiet_day": True,
+            "themes": [dict(t, state="No news in today's feeds.", news_ids=[]) for t in theme_notes()]}
+
+
 def good_brief(day: dt.date = TODAY) -> dict:
     return {
         "date": day.isoformat(),
         "summary": "Oil supply tightened and AI capex guidance softened.",
         "quiet_day": False,
+        "themes": theme_notes(),
+        "holdings": [{"symbol": "SHEL.L", "note": "Shell sells crude and gas, so tighter supply lifts what it is paid.",
+                      "news_ids": ["aaaaaaaaaa"]}],
+        "ripples": [{"from": "oil_gas", "to": "ai_buildout", "effect": "hurt",
+                     "why": "Dearer energy raises what data centres pay to run.", "news_ids": ["aaaaaaaaaa"]}],
+        "watch": [{"what": "OPEC+ meets again on supply.", "when": "2026-12-01", "themes": ["oil_gas"],
+                   "holdings": ["SHEL.L"], "news_ids": ["aaaaaaaaaa"]}],
         "events": [
             {
                 "what": "OPEC+ extended its output cuts into 2027.",

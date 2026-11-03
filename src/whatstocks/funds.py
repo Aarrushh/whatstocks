@@ -217,6 +217,7 @@ class Piece:
     currency: str
     via: str = ""  # the fund it came through
     kind: str = "stock"  # stock | cash | other | unresolved
+    origin: str = ""  # the holding it belongs to
 
 
 def look_through(positions: list[Position], funds: Funds, today: dt.date, offline: bool = False):
@@ -224,11 +225,14 @@ def look_through(positions: list[Position], funds: Funds, today: dt.date, offlin
     pieces, notes = [], []
     for p in positions:
         if p.kind == "cash":
-            pieces.append(Piece(p.symbol, p.name or "Cash", p.value, "Cash", p.currency, kind="cash"))
+            found = [Piece(p.symbol, p.name or "Cash", p.value, "Cash", p.currency, kind="cash")]
         elif p.kind == "fund":
-            pieces += _expand(p.symbol, p.value, funds, today, offline, notes, depth=1)
+            found = _expand(p.symbol, p.value, funds, today, offline, notes, depth=1)
         else:
-            pieces.append(Piece(p.symbol, p.name or p.symbol, p.value, p.country or listing_country(p.symbol), p.currency))
+            found = [Piece(p.symbol, p.name or p.symbol, p.value, p.country or listing_country(p.symbol), p.currency)]
+        for piece in found:
+            piece.origin = p.symbol
+        pieces += found
     return pieces, notes
 
 

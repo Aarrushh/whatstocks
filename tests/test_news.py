@@ -1,7 +1,7 @@
 import datetime as dt
 
 from whatstocks.files import load_themes
-from whatstocks.news import fetch_news, parse_rss
+from whatstocks.news import fetch_news, parse_rss, search_news
 
 RSS = b"""<?xml version="1.0"?><rss><channel>
 <item><title>Oil   jumps &amp; falls</title><link>https://a.example/1</link>
@@ -45,3 +45,21 @@ def test_fetch_news_dedupes_and_sends_only_theme_queries():
     assert len(searches) == len(themes.themes)
     # Only theme queries leave the machine: never a holding.
     assert not any(symbol in u for u in searches for symbol in ("NVDA", "SHEL", "INFY", "ASML"))
+
+
+def test_search_news_sends_only_the_conflict():
+    asked = []
+
+    def get(url, headers, timeout):
+        asked.append(url)
+        return Response()
+
+    def down(url, headers, timeout):
+        raise TimeoutError
+
+    now = dt.datetime(2026, 11, 3, 8, tzinfo=dt.timezone.utc)
+    items, notes = search_news("China blockade of Taiwan", now, get=get)
+    assert len(asked) == 1 and asked[0].startswith("https://news.google.com/") and "China+blockade+of+Taiwan" in asked[0]
+    assert [i["title"] for i in items] == ["Oil jumps & falls", "No date"]  # the 8-day-old story is left out
+    assert notes == [] and all(i["feed"] == "Search" for i in items)
+    assert search_news("China blockade of Taiwan", now, get=down) == ([], ["News search: not fetched (TimeoutError)"])

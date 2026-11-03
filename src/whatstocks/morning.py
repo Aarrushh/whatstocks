@@ -6,31 +6,22 @@ from __future__ import annotations
 
 import datetime as dt
 import json
-from collections import Counter, defaultdict
+from collections import defaultdict
 from pathlib import Path
 
-import pandas as pd
-
 from . import brief as briefs
+from . import dashboard
 from . import exposure as ex
-from . import record, render
-from .files import Book, Problems, load_book
+from . import performance
+from .dashboard import blind_spots  # noqa: F401  (kept importable from here)
+from .files import Book, Problems, load_book, read_json, write_json
 from .funds import Funds, Position, listing_country, look_through
 from .market import Fx, Prices
 from .news import fetch_news
 from .paths import UserDir
 
 
-def _write(path: Path, data) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=1, ensure_ascii=False, default=str), "utf-8")
-
-
-def _read(path: Path):
-    try:
-        return json.loads(path.read_text("utf-8"))
-    except json.JSONDecodeError as e:
-        raise Problems([f"{path.name} line {e.lineno}: not valid JSON ({e.msg})"]) from None
+_read, _write = read_json, write_json
 
 
 def load(user: UserDir) -> tuple[Book, Funds]:
@@ -111,8 +102,19 @@ def prepare(user: UserDir, offline: bool = False, today: dt.date | None = None) 
     bench_pieces, bench_notes = look_through([Position(book.settings.benchmark, "Benchmark", 1.0, "fund", "")], funds, today, offline)
     notes += lt_notes + [n for n in bench_notes if n not in lt_notes]
     exposure = ex.build(book, dict(weights), series, pieces, bench_pieces)
-    exposure.update(date=today.isoformat(), home_currency=home, notes=notes, stale=prices.stale(held, today))
+    index = ex.member_index(book.themes)
+    exposure.update(
+        date=today.isoformat(), home_currency=home, notes=notes, stale=prices.stale(held, today),
+        countries={"you": ex.country_shares(pieces), "world": ex.country_shares(bench_pieces)},
+        holdings_detail=ex.holding_details(pieces, book.themes, index),
+    )
     _write(user.out / "exposure.json", exposure)
+    _write(user.out / "lookthrough.json", {
+        "date": today.isoformat(),
+        "you": ex.lookthrough_rows(pieces, index),
+        "world": ex.lookthrough_rows(bench_pieces, index),
+    })
+    _write(user.out / "performance.json", {"date": today.isoformat(), **performance.build(book, dict(weights), series, today)})
 
     news_path = user.out / "news.json"
     if offline:
@@ -123,7 +125,8 @@ def prepare(user: UserDir, offline: bool = False, today: dt.date | None = None) 
         news = {"fetched": now.isoformat(timespec="minutes"), "items": items, "notes": news_notes}
         _write(news_path, news)
 
-    payload = briefs.build_payload(book, today, dict(weights), exposure["themes"], news["items"])
+    payload = briefs.build_payload(book, today, dict(weights), exposure["themes"], news["items"],
+                                   details=exposure["holdings_detail"])
     amounts = [p.value for p in positions] + [h.quantity for h in book.holdings if h.quantity] + [total]
     leaks = briefs.payload_leaks(payload, amounts)
     if leaks:
@@ -147,23 +150,6 @@ def update_evidence(path: Path, brief: dict | None, today: dt.date) -> list[dict
     return entries
 
 
-def blind_spots(exposure: dict, evidence: list[dict], today: dt.date) -> list[dict]:
-    """Themes busy in the news this week where the user has nothing, or under a quarter of the world's share."""
-    week = [e for e in evidence if (today - dt.date.fromisoformat(e["date"])).days < 7]
-    counts = Counter(tid for e in week for tid in e["themes"])
-    out = []
-    for tid, n in counts.items():
-        row = exposure["themes"].get(tid)
-        if row is None or n < record.BUSY_EVENTS:
-            continue
-        if row["you"] == 0 or row["you"] < row["world"] / 4:
-            out.append({
-                "id": tid, "label": row["label"], "events": n, "you": row["you"], "world": row["world"],
-                "recent": [e["what"] for e in reversed(week) if tid in e["themes"]][:3],
-            })
-    return sorted(out, key=lambda r: -r["events"])
-
-
 def finish(user: UserDir, no_brief: bool = False, allow_advice: bool = False, today: dt.date | None = None) -> Path:
     today = today or dt.date.today()
     book, _ = load(user)
@@ -171,13 +157,14 @@ def finish(user: UserDir, no_brief: bool = False, allow_advice: bool = False, to
     for name in ("exposure.json", "news.json", "payload.json"):
         if not (out / name).exists():
             raise Problems([f"{name} is missing: run 'whatstocks prepare' first"])
-    exposure, news, payload = (_read(out / n) for n in ("exposure.json", "news.json", "payload.json"))
+    payload = _read(out / "payload.json")
     if payload["date"] != today.isoformat():
         raise Problems([f"payload.json is from {payload['date']}: run 'whatstocks prepare' again today"])
 
-    banners, brief = [], None
+    brief = None
+    archive = out / "briefs" / f"{today.isoformat()}.json"
     if no_brief:
-        banners.append("No morning brief today: this page shows the numbers only.")
+        archive.unlink(missing_ok=True)  # a copy of today's brief.json, so a later redraw shows no brief either
     else:
         path = out / "brief.json"
         if not path.exists():
@@ -186,43 +173,7 @@ def finish(user: UserDir, no_brief: bool = False, allow_advice: bool = False, to
         errors, advice = briefs.validate_brief(brief, payload)
         if errors or (advice and not allow_advice):
             raise Problems([f"brief.json: {m}" for m in errors + advice])
-        if advice:
-            banners.append("Parts of this brief read like advice. They were let through with --allow-advice: treat them with care.")
-    if exposure.get("stale"):
-        banners.append("Prices from an earlier day for: " + ", ".join(f"{s} ({d or 'none'})" for s, d in exposure["stale"].items()))
-
-    evidence = update_evidence(out / "evidence.jsonl", brief, today)
-    busy = record.busy_days(evidence)
-    home = book.settings.home_currency
-    prices, fx = Prices(user.cache), Fx(user.cache)
-
-    def series_of(symbol: str) -> pd.Series:
-        currency = prices.currency(symbol)
-        if not currency or not (fx.has(currency) and fx.has(home)):
-            return pd.Series(dtype=float)
-        return fx.convert(prices.series(symbol), currency, home)
-
-    ctx = {
-        "date": today.isoformat(),
-        "home": home,
-        "banners": banners,
-        "notes": exposure.get("notes", []) + news.get("notes", []),
-        "brief": brief,
-        "news": {n["id"]: n for n in news["items"]},
-        "theme_labels": {tid: t.label for tid, t in book.themes.themes.items()},
-        "weights": exposure["weights"],
-        "views": record.view_rows(book, today, evidence, exposure["themes"]),
-        "exposure": exposure,
-        "blind_spots": blind_spots(exposure, evidence, today),
-        "scores": record.scores(book.views),
-        "decisions": [
-            {"id": d.id, "date": d.date.isoformat(), "action": d.action, "symbol": d.symbol, "size_pct": d.size_pct,
-             "views": d.views, "reason": d.reason, "review_on": d.review_on.isoformat(),
-             "flags": record.decision_flags(d, book, busy)}
-            for d in book.decisions
-        ],
-        "reviews": record.reviews(book, today, series_of, series_of(book.settings.benchmark)),
-    }
-    path = out / "dashboard.html"
-    path.write_text(render.page(ctx), "utf-8")
-    return path
+        _write(archive, brief)
+    update_evidence(out / "evidence.jsonl", brief, today)
+    # The dashboard adds the 'no brief' and 'let through with --allow-advice' banners from the brief itself.
+    return dashboard.write(user, book, today, brief, [])

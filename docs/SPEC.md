@@ -1,6 +1,7 @@
 # whatstocks v1 spec (draft)
 
-Status: draft, 2026-11-03. Nothing here is built yet. Section 12 records
+Status: 2026-11-03. v0.1 built the pipeline; v0.2 adds the seven-page
+dashboard (section 3) and conflict scans (section 3.5). Section 12 records
 the owner's decisions on the first round of open questions.
 
 ## 1. Purpose
@@ -34,11 +35,27 @@ These are rules, not goals. Each one has a check in code (section 8).
 
 ## 3. What the user sees
 
-One HTML page, `my/out/dashboard.html`, rebuilt by `/morning`.
+One self-contained HTML file, `my/out/dashboard.html`, rebuilt by `/morning`
+and after each `/scan`. It works offline: no external scripts, styles, fonts
+or images. A small inline script switches between seven pages, sorts lists,
+shows hover tips and switches between a dark and a light theme; without it,
+the pages show one after another. It shows percentages only, never amounts.
+Every chart is drawn in code from numbers the code computed (P2), and every
+heat map has its numbers in a table under it.
 
-### 3.1 Morning brief (top of the page)
+| Page | What it shows |
+|---|---|
+| Overview | Today's and the past year's move of today's mix next to the world index, the biggest tilt, the brief's summary with the themes that matter today and how busy each is, the top 3 events, the next things to watch, the biggest themes, and the latest scan. |
+| Holdings | Each holding with its weight, its moves (1D, 1M, YTD, 1Y) and a 90-day line, sortable. Opening one shows its line against the world index over a year, the largest companies and countries inside it, the brief's note and events on it, and the state of each theme it sits in. |
+| News & world | Section 3.1: the brief, a card for each theme that matters, the ripple map, things to watch on a 90-day timeline, the full events, and two heat maps (each theme proxy against the world index by week, and events per theme by day). Themes that do not matter to the user sit in a short table. |
+| Exposure | Section 3.3, plus a holdings-by-themes table: the share of the portfolio each holding puts into each theme. |
+| Scenarios | Section 3.5. |
+| Views | Section 3.2. |
+| Record | Section 3.4. |
 
-5 to 10 events from the last 24 hours, picked because they touch the user's
+### 3.1 Morning brief (the News & world page)
+
+Up to 10 events from the last 24 hours, picked because they touch the user's
 themes, holdings or views. Each event answers the same four questions:
 
 1. **What happened?** One sentence, with a source link and the source headline next to it.
@@ -48,6 +65,22 @@ themes, holdings or views. Each event answers the same four questions:
 
 A quiet day is a valid result. If no view was touched, the brief says so
 plainly and does not invent drama.
+
+Around the events, the brief gives:
+
+- **The themes that matter.** A line on the state of every theme that is 2%
+  or more of the portfolio or that an open view names (the code checks this),
+  plus any other theme the AI judges today's news made relevant. Each line
+  says where the theme stands and why it matters to this portfolio, citing
+  news ids; a quiet theme says "No news in today's feeds." The page shows
+  only these themes in full, busiest first, and adds the week's blind spots.
+- **Notes on holdings**, where an item is about that company or fund directly.
+- **Ripples** (up to 8): an event in one theme that reaches another, such as
+  energy prices into data-centre costs. The AI is asked to look hardest for
+  ripples into AI build-out. The page draws them as a small network.
+- **Things to watch** (up to 8): meetings, votes, deadlines and releases the
+  news mentions, with a date only when an item gives one. The page merges
+  them with the user's own view deadlines and decision reviews.
 
 ### 3.2 Views panel
 
@@ -81,6 +114,45 @@ benchmark.
 - **Resolved views**: outcome, the time-weighted Brier score per view and overall, and the coin-flip reference of 0.25.
 - **Calibration**: shown only after 20 or more views have resolved. Before that, the panel says the score is mostly luck.
 - **Decisions**: each trade, the views it cited, and any flags (section 7.6). On its review date, it shows what the stock did since the decision against the world index, labelled "what happened after", not "right" or "wrong".
+
+### 3.5 Scenarios: conflict scans (`/scan`)
+
+The user names any conflict ("China blockade of Taiwan"). The page shows
+where it would reach the money, next to the world index. It is a map, not a
+forecast: it says nothing about whether the conflict happens or what prices do.
+
+1. **Code** (`whatstocks scan prepare "<conflict>"`): one news search for the
+   conflict, in the user's words, over the past week. It writes the scan
+   payload: the themes and countries with the user's and the world index's
+   share, the holdings as percentages with what is inside them, and the
+   headlines (no URLs). The payload check of section 8, step 6 applies.
+2. **AI** (`out/scans/<slug>.json`): a summary; 1 to 12 **channels**, each a
+   theme or a country with `effect` (hurt, help or mixed), `strength` (low,
+   medium or high: how hard it would hit revenue or costs, not its odds) and
+   a one-line `why`; up to 4 **analogs**, past windows that looked like it
+   (on or after 2019-12-01, at most 400 days, ended before today); up to 6
+   things to watch. Claims cite news ids. The brief's link and advice checks
+   apply.
+3. **Code** (`whatstocks scan finish <slug>`), from the look-through rows:
+   - each channel's share of the portfolio and of the world index (a theme
+     counts its core members in full and partial members half, a country
+     counts the companies based there);
+   - the share reached by anything the conflict would hurt, help or mix, with
+     **each company counted once**, at the strongest channel that reaches it,
+     and that share weighted by strength (low a third, medium two thirds,
+     high in full);
+   - per holding, the share of it that each effect reaches;
+   - today's holdings, the world index and each theme channel's proxy ETF,
+     replayed over the analog windows.
+
+The page shows these as KPI tiles, a bubble map, hurt-and-help bars per
+holding, the analog replays, and the channel table. The bubble map has one
+cluster each for "would hurt", "mixed" and "would help", and one bubble per
+channel. A bubble's area is the user's share in that channel, and a dashed
+ring is the world index's share on the same scale. Colour shows the effect
+and fill strength shows the channel's strength. The code places every label
+inside its bubble, beside it where it overlaps nothing, or else in a list
+under the cluster, so no label lies on top of another.
 
 ## 4. User flow
 
@@ -133,9 +205,11 @@ whatstocks/
     decisions.yaml
     themes.yaml            optional: the user's additions and overrides
     cache/                 prices, FX, fund holdings, news
-    out/                   exposure.json, brief.json, evidence.jsonl, dashboard.html
-  .claude/skills/          setup, morning (decide and resolve are covered inside setup for now)
-  src/whatstocks/          code: files, market, funds, exposure, news, brief, record, render, morning, cli
+    out/                   exposure.json, lookthrough.json, performance.json, news.json, payload.json,
+                           brief.json, briefs/<date>.json, evidence.jsonl, scans/, dashboard.html
+  .claude/skills/          setup, morning, scan (decide and resolve are covered inside setup for now)
+  src/whatstocks/          code: files, market, funds, exposure, performance, news, brief, record, scan,
+                           dashboard (gathers the page's data), charts, render, morning, cli
   tests/                   offline tests with synthetic prices, holdings files and news
 ```
 
@@ -146,6 +220,8 @@ Commands (the skills run these):
 | `uv run whatstocks check` | Check the files in `my/` and list stocks that are in no theme. |
 | `uv run whatstocks prepare` | Steps 1 to 6 of section 8: data in, `payload.json` out. `--offline` uses the cache only. |
 | `uv run whatstocks finish` | Steps 8 to 11: check `brief.json`, update the evidence log, build the page. `--no-brief` skips the brief. |
+| `uv run whatstocks scan prepare "<conflict>"` | Section 3.5, step 1: search the news, write the scan payload. `--offline` reuses the last search. |
+| `uv run whatstocks scan finish <slug>` | Section 3.5, step 3: check the AI's scan file, compute it, rebuild the page. |
 
 Every command takes `--dir <folder>` (default `my`), so `--dir demo` runs the demo user.
 
@@ -346,11 +422,11 @@ Steps 1 to 6 are `whatstocks prepare`, step 7 is the user's AI, and steps 8 to 1
 | 3 | code | Refresh fund holdings files when they are older than 30 days. | Flag files older than 90 days. |
 | 4 | code | Compute exposure (section 7) into `exposure.json`. | Theme shares within [0, 1], and the benchmark computed too. |
 | 5 | code | Fetch news into `news.json`: the publisher feeds, plus one search per theme built from its `news_query`. Each item gets a stable id (a hash of its URL). | Deduplicate by URL and title. Only theme queries go to the search engine, never holdings or views. |
-| 6 | code | Build the AI payload: news items (id, title, source, time, no URL), tickers with portfolio %, the themes with your share and the world's, and open views (statement, current probability, themes). | **Payload check**: no money fields, and none of the user's amounts or quantities written anywhere outside public text such as headlines. |
-| 7 | AI | Write `brief.json`: a summary, and events with `news_ids` and the four answers (`what`, `money`, `touches`, and `views` with `for`, `against` or `unclear` and a `why`). The format is in `.claude/skills/morning/SKILL.md`. | Checked in step 8. Blind spots are computed in code, not by the AI. |
-| 8 | code | Validate the brief. | Every event cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. |
+| 6 | code | Build the AI payload: news items (id, title, source, time, no URL), tickers with portfolio % and the countries and themes inside each, the themes with your share and the world's (marked `must_cover` at 2% or more, or when an open view names them), and open views (statement, current probability, themes). Also write `performance.json` (price moves) and `lookthrough.json` (the rows a scan needs). | **Payload check**: no money fields, and none of the user's amounts or quantities written anywhere outside public text such as headlines. |
+| 7 | AI | Write `brief.json`: a summary; events with `news_ids` and the four answers (`what`, `money`, `touches`, and `views` with `for`, `against` or `unclear` and a `why`); a line per theme that matters; notes on holdings; ripples between themes; things to watch (section 3.1). The format is in `.claude/skills/morning/SKILL.md`. | Checked in step 8. Blind spots are computed in code, not by the AI. |
+| 8 | code | Validate the brief. | Every event, holding note, ripple and thing to watch cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Every `must_cover` theme has a line. At most 10 events, 8 ripples and 8 things to watch; no date to watch in the past. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) anywhere stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. The checked brief is kept in `briefs/<date>.json`. |
 | 9 | code | Append today's events to `evidence.jsonl`. | Earlier days are never changed. A re-run on the same day replaces that day's entries. |
-| 10 | code | Render `dashboard.html` from a template. | The page works offline, with no external scripts. |
+| 10 | code | Render `dashboard.html` (section 3) from the files in `out/`, including any scans. | The page works offline, with no external scripts, styles or fonts. Every text from a file, a feed or the AI is escaped, and only http(s) links become links. |
 | 11 | code | Mark the views that are past their `resolves_by` date. | — |
 
 The AI is the user's own Claude, running inside Claude Code. The tool needs
@@ -401,6 +477,6 @@ The default install must work with **no keys at all**. Keys only add sources.
 | 6 | Neo4j `docker-compose.yml` | **Removed** | Nothing in this design needs a graph database. The file stays in git history. |
 | 7 | Packaging | **`uv`** | Install becomes: install `uv` and Claude Code, clone, then `uv sync`. `uv` also installs the right Python version. |
 
-Next open items, for after the data-source check: the minimum Python
-version, the news query design (section 8, step 5), and the dashboard
-template.
+Settled since: Python 3.11 or later; one news search per theme, built from
+its `news_query` (section 8, step 5); and the dashboard (section 3), built
+in v0.2 with conflict scans (section 3.5).

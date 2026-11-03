@@ -13,6 +13,7 @@ WEEKS = 104
 MIN_WEEKS = 52
 WORST_WEEKS = 10
 TOP_NAMES = 15
+TOP_INSIDE = 10
 SELL_OFFS = [
     ("Covid crash", "2020-02-19", "2020-03-23"),
     ("2022 rate shock", "2021-11-19", "2022-10-13"),
@@ -122,9 +123,14 @@ def window_return(series: pd.Series, start: str, end: str) -> float | None:
 
 
 def sell_offs(weights: dict[str, float], series: dict[str, pd.Series], cash: set[str], bench: pd.Series) -> list[dict]:
-    """Today's holdings replayed over named past sell-offs, with the share of value that had prices then."""
+    return replay(weights, series, cash, bench, SELL_OFFS)
+
+
+def replay(weights: dict[str, float], series: dict[str, pd.Series], cash: set[str], bench: pd.Series,
+           windows: list[tuple[str, str, str]]) -> list[dict]:
+    """Today's holdings replayed over past windows, with the share of value that had prices then."""
     out = []
-    for name, start, end in SELL_OFFS:
+    for name, start, end in windows:
         total, covered = 0.0, 0.0
         for symbol, w in weights.items():
             r = 0.0 if symbol in cash else window_return(series.get(symbol, pd.Series(dtype=float)), start, end)
@@ -172,3 +178,42 @@ def build(book: Book, weights: dict[str, float], series: dict[str, pd.Series], p
         "currencies": {"you": split(pieces, "currency")},
         "unresolved": sum(p.value for p in pieces if p.kind == "unresolved") / (sum(p.value for p in pieces) or 1.0),
     }
+
+
+def country_shares(pieces: list[Piece]) -> dict[str, float]:
+    """Share of value by country, every country (the regions panel shows the top few)."""
+    total = sum(p.value for p in pieces) or 1.0
+    out = defaultdict(float)
+    for p in pieces:
+        out[p.country or "Unknown"] += p.value / total
+    return dict(sorted(out.items(), key=lambda kv: -kv[1]))
+
+
+def lookthrough_rows(pieces: list[Piece], index: dict) -> list[list]:
+    """[holding, share of the portfolio, theme member or None, country], summed over equal keys: all a scan needs."""
+    total = sum(p.value for p in pieces) or 1.0
+    sums = defaultdict(float)
+    for p in pieces:
+        if p.value:
+            sums[(p.origin, index.get(p.line), p.country or "Unknown")] += p.value / total
+    return [[o, round(v, 8), m, c] for (o, m, c), v in sorted(sums.items(), key=lambda kv: -kv[1])]
+
+
+def holding_details(pieces: list[Piece], themes: ThemeMap, index: dict) -> dict[str, dict]:
+    """Per holding: the themes and countries inside it, and for a fund its largest companies."""
+    by_holding = defaultdict(list)
+    for p in pieces:
+        by_holding[p.origin].append(p)
+    out = {}
+    for origin, group in by_holding.items():
+        total = sum(p.value for p in group) or 1.0
+        inside = defaultdict(float)
+        for p in group:
+            if p.via and p.kind == "stock":
+                inside[p.name] += p.value / total
+        out[origin] = {
+            "themes": {tid: s["share"] for tid, s in theme_shares(group, themes, index).items() if s["share"] > 0},
+            "countries": split(group, "country", top=5),
+            "inside": sorted(([n, v] for n, v in inside.items()), key=lambda x: -x[1])[:TOP_INSIDE],
+        }
+    return out

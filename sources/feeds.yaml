@@ -20,3 +20,5 @@ feeds:
 search:
   enabled: true
   url: https://news.google.com/rss/search?q={query}+when:1d&hl=en-GB&gl=GB&ceid=GB:en
+  # /scan: one search for the conflict the user names, over the past week.
+  scan_url: https://news.google.com/rss/search?q={query}+when:7d&hl=en-GB&gl=GB&ceid=GB:en
