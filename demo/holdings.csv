@@ -1,0 +1,8 @@
+symbol,isin,name,quantity,value,currency,account,kind
+VWCE.DE,IE00BK5BQT80,Vanguard FTSE All-World UCITS ETF (Acc),40,,,Broker A,fund
+NVDA,US67066G1040,NVIDIA,6,,,Broker A,stock
+ASML.AS,NL0010273215,ASML Holding,2,,,Broker A,stock
+RHM.DE,DE0007030009,Rheinmetall,1,,,Broker A,stock
+SHEL.L,GB00BP6MXD84,Shell,30,,,Broker A,stock
+INFY.NS,INE009A01021,Infosys,25,,,Broker B,stock
+CASH-EUR,,Cash,,1500,EUR,Broker A,cash

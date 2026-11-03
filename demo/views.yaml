@@ -1,0 +1,46 @@
+# Demo views. These show the format; they are not forecasts by the authors.
+views:
+  - id: ai-capex-cut-2027
+    statement: >-
+      At least two of Microsoft, Alphabet, Amazon and Meta report lower
+      capital expenditure for calendar 2027 than for calendar 2026.
+    created: 2026-09-10
+    resolves_by: 2028-03-31
+    resolution: >-
+      Sum each company's quarterly capital expenditure for calendar 2027 and
+      calendar 2026 from its quarterly earnings releases. YES if two or more
+      of the four are lower in 2027.
+    themes:
+      ai_buildout: down
+      power_grid: down
+    forecasts:
+      - {date: 2026-09-10, probability: 0.30, note: first call}
+      - {date: 2026-10-20, probability: 0.40, note: two of the four trimmed next-year guidance at Q3 results}
+
+  - id: brent-above-90-2027
+    statement: >-
+      Brent crude averages above 90 US dollars a barrel in at least one
+      calendar quarter of 2027.
+    created: 2026-09-12
+    resolves_by: 2028-01-31
+    resolution: >-
+      Quarterly average of the EIA Europe Brent spot price FOB series
+      (RBRTE) for Q1 to Q4 2027. YES if any quarter averages above 90.00.
+    themes:
+      oil_gas: up
+    forecasts:
+      - {date: 2026-09-12, probability: 0.35, note: first call}
+
+  - id: india-gdp-6-5-fy27
+    statement: >-
+      India's real GDP growth for fiscal year 2026-27 (April to March) is
+      6.5% or higher in the first official full-year estimate.
+    created: 2026-10-01
+    resolves_by: 2027-06-30
+    resolution: >-
+      The provisional estimate for 2026-27 published by India's Ministry of
+      Statistics (MoSPI), usually at the end of May. YES if 6.5% or higher.
+    themes:
+      india: up
+    forecasts:
+      - {date: 2026-10-01, probability: 0.60, note: first call}

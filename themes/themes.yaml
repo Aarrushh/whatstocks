@@ -1,0 +1,131 @@
+# Starter theme map. Member lists are incomplete on purpose: /setup proposes
+# additions for the user's own holdings, with a reason, and the user confirms.
+# Symbols are Yahoo-style. Members are companies only; funds are looked through.
+# core counts 1.0 toward theme share, partial counts 0.5 (docs/SPEC.md 7.2).
+version: 1
+
+# Other lines of the same company. Index funds usually hold the home-market
+# line, so look-through tries these too and counts the company once.
+# Each pair below was matched in the iShares ACWI holdings file on 2026-11-02.
+aliases:
+  TSM: [2330.TW]
+  CCJ: [CCO.TO]
+  BABA: [9988.HK]
+  JD: [9618.HK]
+  BIDU: [9888.HK]
+  AEM: [AEM.TO]
+  FNV: [FNV.TO]
+  GFI: [GFI.JO]
+  SQM: [SQM-B.SN]
+
+themes:
+  ai_buildout:
+    label: AI build-out
+    description: >-
+      Companies whose revenue depends on AI data-centre spending: chips,
+      chip equipment, networking, servers and data-centre power.
+    proxy: SOXX
+    members:
+      core: [NVDA, AVGO, AMD, TSM, ASML.AS, MU, ANET, VRT]
+      partial: [MSFT, GOOGL, GOOG, AMZN, META, ORCL]
+    notes: >-
+      The hyperscalers are partial because AI spending is a cost for them
+      today, not most of their revenue. This choice moves the benchmark's
+      share a lot; see docs/SPEC.md section 11.
+
+  defence:
+    label: Defence
+    description: Companies whose main customers are defence ministries.
+    proxy: ITA
+    members:
+      core: [LMT, NOC, RTX, GD, LHX, BA.L, RHM.DE, SAAB-B.ST, LDO.MI, HO.PA, HAG.DE]
+      partial: [AIR.PA, SAF.PA, BA]
+
+  oil_gas:
+    label: Oil and gas
+    description: Producers and integrated oil companies whose profits follow the oil and gas price.
+    proxy: XLE
+    members:
+      core: [XOM, CVX, COP, SHEL.L, BP.L, TTE.PA, EQNR.OL, ENI.MI]
+      partial: [RELIANCE.NS]
+
+  power_grid:
+    label: Power grid
+    description: >-
+      Grid equipment, cables and electrification, which gain from both data
+      centres and the energy transition.
+    proxy: GRID
+    members:
+      core: [ETN, GEV, PWR, SU.PA, PRY.MI, ABBN.SW]
+      partial: [SIE.DE, VRT]
+
+  gold:
+    label: Gold
+    description: Gold miners and royalty companies, which move with the gold price.
+    proxy: GLD
+    members:
+      core: [NEM, AEM, GFI, FNV]
+      partial: []
+
+  india:
+    label: India growth
+    description: Large companies listed and based in India.
+    proxy: INDA
+    members:
+      core: [RELIANCE.NS, HDFCBANK.NS, ICICIBANK.NS, INFY.NS, TCS.NS, BHARTIARTL.NS, LT.NS]
+      partial: []
+    notes: >-
+      v1 uses listing and domicile, not where revenue comes from. Infosys
+      earns mostly in the US but sits here because its shares trade on
+      India's growth story.
+
+  china:
+    label: China
+    description: Large companies listed and based in China or Hong Kong.
+    proxy: MCHI
+    members:
+      core: [BABA, 0700.HK, JD, BIDU, 1211.HK, 3690.HK]
+      partial: []
+    notes: The US lines of BABA, JD and BIDU are listed; their Hong Kong lines are in aliases.
+
+  critical_minerals:
+    label: Critical minerals and rare earths
+    description: >-
+      Miners and processors of rare earths, lithium and other minerals that
+      governments treat as strategic, where export controls and supply deals
+      move prices.
+    proxy: REMX
+    members:
+      core: [MP, LYC.AX, ILU.AX, ALB, SQM]
+      partial: [FCX, GLEN.L]
+    notes: >-
+      Rare earths and lithium often move apart. Rare earths follow China's
+      export policy, and lithium follows battery demand.
+
+  nuclear_uranium:
+    label: Nuclear and uranium
+    description: >-
+      Uranium miners, fuel enrichment, reactor components and nuclear-heavy
+      power producers.
+    proxy: URA
+    members:
+      core: [CCJ, KAP.L, NXE, UEC, LEU, BWXT, CEG]
+      partial: [RR.L]
+    notes: >-
+      Kazatomprom (KAP.L) is the largest producer, and Russia is a major
+      enricher, so supply here is geopolitical by nature.
+
+  shipping_routes:
+    label: Shipping and trade routes
+    description: >-
+      Container lines, tankers and dry-bulk carriers whose profits move with
+      freight rates and with disruption at chokepoints (Red Sea, Hormuz,
+      Panama, Taiwan Strait).
+    proxy: BDRY
+    members:
+      core: [MAERSK-B.CO, HLAG.DE, ZIM, 1919.HK, FRO, STNG, SBLK]
+      partial: [KNIN.SW, DSV.CO]
+    notes: >-
+      BDRY tracks dry-bulk freight futures, not shipping shares, so theme
+      beta here measures sensitivity to freight rates. Tankers and container
+      lines can react in opposite ways to the same chokepoint event.

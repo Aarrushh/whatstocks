@@ -1,0 +1,6 @@
+# Your own data. Never commit it.
+my/
+
+.env
+__pycache__/
+.venv/

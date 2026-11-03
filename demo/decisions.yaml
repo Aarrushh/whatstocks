@@ -1,0 +1,37 @@
+# Demo decisions. Each one is chosen to show a different flag (docs/SPEC.md 7.6).
+decisions:
+  # Shows "low-confidence view": the cited view stood at 30% on this date.
+  - id: d-2026-09-15-nvda
+    date: 2026-09-15
+    action: trim
+    symbol: NVDA
+    size_pct: 2.0
+    views: [ai-capex-cut-2027]
+    reason: >-
+      Cutting AI chip exposure because I give a capex slowdown a real chance.
+    review_on: 2027-09-15
+    corrects: null
+
+  # Shows "no view cited".
+  - id: d-2026-10-01-shel-l
+    date: 2026-10-01
+    action: add
+    symbol: SHEL.L
+    size_pct: 1.5
+    views: []
+    reason: >-
+      Wanted more dividend income.
+    review_on: 2027-10-01
+    corrects: null
+
+  # No flags: the cited view is above 50% and implies "up" for a theme INFY.NS is core in.
+  - id: d-2026-10-20-infy-ns
+    date: 2026-10-20
+    action: add
+    symbol: INFY.NS
+    size_pct: 1.0
+    views: [india-gdp-6-5-fy27]
+    reason: >-
+      Adding to India because I expect growth to hold up.
+    review_on: 2027-10-20
+    corrects: null
