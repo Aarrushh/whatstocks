@@ -1,8 +1,10 @@
 # whatstocks v1 spec (draft)
 
-Status: 2026-11-03. v0.1 built the pipeline; v0.2 adds the seven-page
-dashboard (section 3) and conflict scans (section 3.5). Section 12 records
-the owner's decisions on the first round of open questions.
+Status: 2026-11-04. v0.1 built the pipeline; v0.2 added the seven-page
+dashboard (section 3) and conflict scans (section 3.5); v0.3 rebuilds the
+page in React, still as one offline file ([DASHBOARD.md](DASHBOARD.md)).
+Section 12 records the owner's decisions on the first round of open
+questions.
 
 ## 1. Purpose
 
@@ -36,12 +38,16 @@ These are rules, not goals. Each one has a check in code (section 8).
 ## 3. What the user sees
 
 One self-contained HTML file, `my/out/dashboard.html`, rebuilt by `/morning`
-and after each `/scan`. It works offline: no external scripts, styles, fonts
-or images. A small inline script switches between seven pages, sorts lists,
-shows hover tips and switches between a dark and a light theme; without it,
-the pages show one after another. It shows percentages only, never amounts.
-Every chart is drawn in code from numbers the code computed (P2), and every
-heat map has its numbers in a table under it.
+and after each `/scan`. It works offline and fetches nothing: its script,
+styles and fonts are inlined, and its Content-Security-Policy blocks every
+request. The page is a React app (`web/`, built into
+`src/whatstocks/assets/dashboard.html`); Python computes the view model and
+puts it into the page as escaped JSON, also written to `out/dashboard.json`.
+The page has seven pages, a command palette, hover tips on every mark, and a
+dark and a light theme. It shows percentages only, never amounts. Every
+chart draws numbers the code computed (P2), and every heat map is a real
+table, so its numbers are there for screen readers. The design rules are in
+[DASHBOARD.md](DASHBOARD.md).
 
 | Page | What it shows |
 |---|---|
@@ -209,7 +215,9 @@ whatstocks/
                            brief.json, briefs/<date>.json, evidence.jsonl, scans/, dashboard.html
   .claude/skills/          setup, morning, scan (decide and resolve are covered inside setup for now)
   src/whatstocks/          code: files, market, funds, exposure, performance, news, brief, record, scan,
-                           dashboard (gathers the page's data), charts, render, morning, cli
+                           dashboard (gathers the page's data), geometry (bubble and ripple layout),
+                           render (the view model, filled into assets/dashboard.html), morning, cli
+  web/                     the page: React, built by contributors with Node (DASHBOARD.md)
   tests/                   offline tests with synthetic prices, holdings files and news
 ```
 
@@ -426,7 +434,7 @@ Steps 1 to 6 are `whatstocks prepare`, step 7 is the user's AI, and steps 8 to 1
 | 7 | AI | Write `brief.json`: a summary; events with `news_ids` and the four answers (`what`, `money`, `touches`, and `views` with `for`, `against` or `unclear` and a `why`); a line per theme that matters; notes on holdings; ripples between themes; things to watch (section 3.1). The format is in `.claude/skills/morning/SKILL.md`. | Checked in step 8. Blind spots are computed in code, not by the AI. |
 | 8 | code | Validate the brief. | Every event, holding note, ripple and thing to watch cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Every `must_cover` theme has a line. At most 10 events, 8 ripples and 8 things to watch; no date to watch in the past. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) anywhere stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. The checked brief is kept in `briefs/<date>.json`. |
 | 9 | code | Append today's events to `evidence.jsonl`. | Earlier days are never changed. A re-run on the same day replaces that day's entries. |
-| 10 | code | Render `dashboard.html` (section 3) from the files in `out/`, including any scans. | The page works offline, with no external scripts, styles or fonts. Every text from a file, a feed or the AI is escaped, and only http(s) links become links. |
+| 10 | code | Render `dashboard.html` (section 3) from the files in `out/`, including any scans: the view model goes into the built template as JSON, and into `dashboard.json`. | The page works offline and its Content-Security-Policy blocks every request. The JSON is escaped so no text can close its script tag, the page writes every text as text, and only http(s) links become links. A test checks the template was built from the current `web/` sources. |
 | 11 | code | Mark the views that are past their `resolves_by` date. | — |
 
 The AI is the user's own Claude, running inside Claude Code. The tool needs
@@ -478,5 +486,7 @@ The default install must work with **no keys at all**. Keys only add sources.
 | 7 | Packaging | **`uv`** | Install becomes: install `uv` and Claude Code, clone, then `uv sync`. `uv` also installs the right Python version. |
 
 Settled since: Python 3.11 or later; one news search per theme, built from
-its `news_query` (section 8, step 5); and the dashboard (section 3), built
-in v0.2 with conflict scans (section 3.5).
+its `news_query` (section 8, step 5); the dashboard (section 3), built in
+v0.2 with conflict scans (section 3.5); and its rebuild in React in v0.3,
+with Vite rather than Next.js and no backend ([DASHBOARD.md](DASHBOARD.md),
+section 1).

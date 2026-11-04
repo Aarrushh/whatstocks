@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!--CSP-->
+    <meta name="color-scheme" content="dark light" />
+    <title>whatstocks</title>
+    <script>
+      try {
+        var saved = localStorage.getItem("whatstocks-theme")
+        if (saved === "light" || saved === "dark") document.documentElement.setAttribute("data-theme", saved)
+      } catch (err) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script id="ws-data" type="application/json">/*WS_DATA*/</script>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

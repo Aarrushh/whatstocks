@@ -35,7 +35,7 @@ def test_prepare_then_finish(user, fake_world):
     page = morning.finish(user, today=TODAY).read_text("utf-8")
     assert "Low-confidence view: ai-capex-cut-2027 was 30% that day" in page
     assert "No view cited" in page
-    assert 'href="https://example.com/opec"' in page
+    assert '"url":"https://example.com/opec"' in page  # a web link, carried in the page's data
     assert "OPEC+ extended its output cuts into 2027." in page
 
     assert json.loads((user.out / "briefs" / f"{TODAY.isoformat()}.json").read_text("utf-8")) == good_brief()

@@ -1,5 +1,6 @@
 """Price moves for the dashboard (performance.py)."""
 import datetime as dt
+import math
 
 import pandas as pd
 import pytest
@@ -30,6 +31,21 @@ def test_replay_counts_cash_as_flat():
     assert list(rets.round(6)) == [0.05, 0.05]  # half the money up 10% a day, half in cash
     line = perf.index_line(rets, TODAY)
     assert line[0][1] == 100.0 and line[-1][1] == pytest.approx(110.25)
+
+
+def test_portfolio_line_ends_where_its_period_figures_say():
+    days = pd.bdate_range("2025-06-02", "2026-11-03")
+    prices = pd.Series([100 + 10 * math.sin(i / 5) + 0.1 * i for i in range(len(days))], index=days)
+    morning = dt.date(2026, 11, 4)  # a Wednesday morning: the last close is Tuesday's
+    rets, _ = perf.daily_returns({"A": 1.0}, {"A": prices}, set(), morning)
+    line = dict(perf.index_line(rets, morning))
+    level = (1 + rets).cumprod()
+    last = list(line)[-1]
+    assert line[min(line)] == 100.0 and last == "2026-11-03"
+    for period, back in (("1M", 30), ("3M", 91), ("1Y", 365)):
+        cut = (pd.Timestamp(last) - pd.Timedelta(days=back)).date().isoformat()
+        base = max(d for d in line if d <= cut)  # what the page's window control starts from
+        assert line[last] / line[base] - 1 == pytest.approx(perf.change(level, morning, period), abs=1e-4)
 
 
 def test_a_market_holiday_carries_the_last_price():

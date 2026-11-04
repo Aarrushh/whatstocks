@@ -85,7 +85,10 @@ def test_finish_counts_each_company_once_and_draws_the_map(ready):
     assert [n["id"] for n in result["news"]] == ["aaaaaaaaaa", "bbbbbbbbbb"]  # only what the scan cites
 
     page = done["page"].read_text("utf-8")
-    assert f'data-scan="{SLUG}"' in page and 'class="bm-b hurt s-high"' in page  # the bubble map
+    model = json.loads((ready.out / "dashboard.json").read_text("utf-8"))
+    shown = next(s for s in model["scans"] if s["slug"] == SLUG)
+    assert shown["bubbles"][0]["effect"] == "hurt" and shown["bubbles"][0]["bubbles"]  # the bubble map
+    assert f'"slug":"{SLUG}"' in page
     assert "A blockade would cut the supply of chips" in page
     assert "Oil supply tightened and AI capex guidance softened." in page  # the morning brief stays on the page
 

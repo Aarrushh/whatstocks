@@ -8,14 +8,15 @@ Your own AI assistant (Claude Code) runs it on your own machine. There is
 no server and no account, and your amounts never leave your computer (see
 [What leaves your computer](#what-leaves-your-computer)).
 
-> **Status: early (v0.2).** The whole pipeline, the seven-page dashboard and
+> **Status: early (v0.3).** The whole pipeline, the seven-page dashboard and
 > conflict scans run on the demo user, and the tests pass offline. Expect
-> rough edges. The design is in [docs/SPEC.md](docs/SPEC.md).
+> rough edges. The design is in [docs/SPEC.md](docs/SPEC.md), and the page's
+> design in [docs/DASHBOARD.md](docs/DASHBOARD.md).
 
 ## What you see each morning
 
-One page, `dashboard.html`, that works offline. It has seven tabs, in a dark
-or a light theme:
+One page, `dashboard.html`, that works offline and fetches nothing. It has
+seven pages, in a dark or a light theme:
 
 | Tab | Question it answers |
 |---|---|
@@ -26,6 +27,11 @@ or a light theme:
 | **Scenarios** | If a conflict I name broke out, where would it reach my money? A bubble map of every theme and region it touches, my share against the world's. |
 | **Views** | What do I think will happen, how sure am I, and what did today's news say for or against it? |
 | **Record** | Were my past calls right? Did my trades follow my own views? |
+
+Press `Ctrl K` (`⌘K` on a Mac) or `/` to jump to any page, holding, theme,
+view or scan, or to copy a command for Claude Code. `1` to `7` switch pages,
+`T` switches the theme and `Esc` closes a card. Every mark on a chart has a
+hover tip.
 
 The **morning brief** covers the day's world events, and it reads each one
 through the same four questions:
@@ -130,6 +136,23 @@ uv run pytest
 The tests run offline, with synthetic prices, holdings files and news. To
 add a fund that can be looked through, add it to `sources/funds.yaml`. To
 add a theme or a company, edit `themes/themes.yaml`.
+
+The page is a React app in `web/` (Vite, TypeScript, Tailwind, shadcn/ui,
+Motion). Python computes every number and fills the page with them, so
+using whatstocks needs Python only. To change the page itself you need
+Node:
+
+```text
+cd web
+npm install
+npm run dev     # the page with the demo's data, reloading as you edit
+npm run build   # type-check, build, and copy the page into the package
+npm test
+```
+
+Commit the rebuilt `src/whatstocks/assets/dashboard.html` with your
+change: a test fails when the page and its sources are out of step. The
+design rules are in [web/CLAUDE.md](web/CLAUDE.md).
 
 ## Not financial advice
 

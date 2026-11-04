@@ -181,6 +181,10 @@ def context(user: UserDir, book: Book, today: dt.date, brief: dict | None, banne
 
 
 def write(user: UserDir, book: Book, today: dt.date, brief: dict | None, banners: list[str]) -> Path:
+    """The page, and next to it the view model it carries (dashboard.json, percentages only), which the page's
+    development server in web/ reads."""
+    model = render.view_model(context(user, book, today, brief, banners))
+    (user.out / "dashboard.json").write_text(json.dumps(model, ensure_ascii=False, default=str), "utf-8")
     path = user.out / "dashboard.html"
-    path.write_text(render.page(context(user, book, today, brief, banners)), "utf-8")
+    path.write_text(render.fill(render.template(), model), "utf-8")
     return path

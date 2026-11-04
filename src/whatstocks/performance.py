@@ -65,14 +65,15 @@ def daily_returns(weights: dict[str, float], series: dict[str, pd.Series], cash:
 
 
 def index_line(returns: pd.Series, today: dt.date, days: int = LINE_DAYS) -> list[list]:
-    """Returns compounded into an index that starts at 100, as [[date, value], ...]."""
-    start = pd.Timestamp(today) - pd.Timedelta(days=days)
-    r = returns[(returns.index > start) & (returns.index <= pd.Timestamp(today))]
+    """Returns compounded into an index that starts at 100, as [[date, value], ...].
+
+    The window is cut the way `change` cuts a period (from the last close, not from today), so the line ends
+    where the period figure says even on a morning before today's close exists."""
+    r = returns[returns.index <= pd.Timestamp(today)]
     if r.empty:
         return []
-    level = (1 + r).cumprod() * 100
-    first = r.index[0] - pd.Timedelta(days=1)
-    return [[first.date().isoformat(), 100.0]] + [[d.date().isoformat(), round(float(v), 3)] for d, v in level.items()]
+    start = pd.Series([1.0], index=pd.DatetimeIndex([r.index[0] - pd.Timedelta(days=1)]))
+    return rebased(pd.concat([start, (1 + r).cumprod()]), today, days)
 
 
 def rebased(series: pd.Series, today: dt.date, days: int, weekly: bool = False) -> list[list]:

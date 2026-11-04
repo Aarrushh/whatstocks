@@ -1,6 +1,6 @@
 [project]
 name = "whatstocks"
-version = "0.1.0"
+version = "0.3.0"
 description = "A morning dashboard that holds you to your own views about the world."
 readme = "README.md"
 license = "MIT"
