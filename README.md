@@ -12,7 +12,8 @@ tells you what to buy or sell.
 
 ![The Overview page: your mix against the world index, the morning brief, your biggest themes and things to watch](docs/images/overview.png)
 
-Your own AI assistant (Claude Code) runs it on your own machine. There is
+Your own AI assistant (Claude Code, or any other AI coding agent) runs it
+on your own machine. There is
 no server and no account, and your amounts never leave your computer (see
 [What leaves your computer](#what-leaves-your-computer)).
 
@@ -92,9 +93,10 @@ money, not a forecast.
 
 ## Getting started
 
-You need [uv](https://docs.astral.sh/uv/) and
-[Claude Code](https://claude.com/claude-code). uv installs the right Python
-version for you.
+You need [uv](https://docs.astral.sh/uv/) and an AI coding agent.
+[Claude Code](https://claude.com/claude-code) is what the steps below use;
+for another agent, see [Not using Claude?](#not-using-claude). uv installs
+the right Python version for you.
 
 `/setup` is the onboarding. It takes about 15 minutes, and Claude walks you
 through it one step at a time, showing each file it writes:
@@ -144,6 +146,86 @@ Then open `demo/out/dashboard.html`. Inside Claude Code, ask for
 "/morning on the demo folder" to get the brief as well, and "/scan Iran war
 on the demo folder" for a scan.
 
+### Not using Claude?
+
+whatstocks is built around Claude Code, but nothing in it needs Claude. Any
+AI coding agent that can read files and run commands in this folder can run
+it: Codex, Cursor, Copilot, Gemini CLI, or a local model. The slash commands
+are Claude Code's shortcuts for three instruction files, so with another
+agent, ask it to follow the file instead:
+
+| In Claude Code | With any other agent |
+|---|---|
+| `/setup` | "Follow `.claude/skills/setup/SKILL.md`." |
+| `/morning` | "Follow `.claude/skills/morning/SKILL.md`." |
+| `/scan Iran war` | "Follow `.claude/skills/scan/SKILL.md` for: Iran war." |
+
+The checks that keep your amounts away from the AI, and advice out of the
+brief, are in the code, so they work the same whichever model you use.
+
+## Make it yours
+
+`/setup` gives you a starting point. After that, the dashboard is yours to
+change, and you do not need to write code to change it. Open your AI agent
+(Claude Code or any other) in this folder and say what you want in plain
+words:
+
+| You say | What the AI changes |
+|---|---|
+| "Add Rheinmetall and BAE to defence." | Your theme file, `my/themes.yaml` |
+| "I follow Japan closely. Add a Japan theme with its own news." | Your theme file: a new theme, its proxy fund and its news search |
+| "Take Microsoft out of AI build-out. I don't see it that way." | Your theme file, with `remove:` |
+| "Add the Financial Times and Nikkei Asia to the news." | The news feeds, `sources/feeds.yaml` |
+| "Put my views at the top of the Overview page." | The page, in `web/` |
+| "Add a card showing my exposure to the US dollar." | The numbers in Python, then a card on the page |
+| "Make the accent colour green." | The page's colour tokens |
+
+The theme map that ships with whatstocks is a starting opinion, not a fact.
+If you see the world differently, change it: your changes sit in your own
+`my/themes.yaml`, on top of the shipped map, and never touch it.
+
+### The guardrails
+
+You can try things freely, because the repo is set up so that an
+experiment cannot cost you your data:
+
+- **Your data lives in one folder.** Everything about you is in `my/`, and
+  git ignores it, so it never ends up in a commit or on GitHub.
+- **The AI backs up before it edits your data.** Before it changes a file in
+  `my/`, it copies the file into `my/backups/<date>/`, shows you the change
+  and waits for your yes. It never deletes anything in `my/` by itself.
+- **Your record cannot be rewritten.** Past forecasts and decisions are
+  never edited or deleted, only added to, so your score stays honest.
+- **Changes to the code happen on a branch.** For anything outside `my/`,
+  the AI first makes a branch. If you don't like the result,
+  `git switch main` takes you back to the version you had.
+- **The AI checks its own work.** It runs the tests, rebuilds the page and
+  looks at it before it says a change is done, and it tells you what it
+  checked.
+- **Some rules hold whatever you ask.** The core promises in
+  [What it will never do](#what-it-will-never-do) stay: no buy or sell
+  advice, no amounts sent to the AI, no broker logins, and a page that
+  fetches nothing. If a request would break one, the AI says so and offers
+  the nearest thing that keeps it.
+
+These rules are written for the AI in [CLAUDE.md](CLAUDE.md), which Claude
+Code reads when it opens this folder. Other agents look for
+[AGENTS.md](AGENTS.md), which points them to the same rules. If yours reads
+neither by itself, start by telling it: "Read CLAUDE.md first."
+
+### If something goes wrong
+
+| What happened | How to undo it |
+|---|---|
+| A change to your holdings, views or themes | Copy the file back from `my/backups/<date>/` |
+| A code or page change you don't like | `git switch main` |
+| A change to one file that is not committed yet | `git restore <file>` |
+| The page looks broken | `uv run pytest`, then ask your AI to fix what fails |
+
+To be safe, keep your own copy of `my/` somewhere else too, for example in
+a cloud drive folder. It is the one part of whatstocks that exists only on
+your computer.
+
 ## What leaves your computer
 
 | Goes to | What | Why |
@@ -153,8 +235,8 @@ on the demo folder" for a scan.
 | iShares | A request for the MSCI ACWI holdings file | Looking through funds |
 | News feeds and Google News | The theme search queries in `themes/themes.yaml` | The day's news |
 | Google News | The conflict name you type for a scan | The scan's news |
-| Your AI (Claude) | Tickers, portfolio percentages, your open views, headlines | Writing the brief |
-| Your AI (Claude), for a scan | The conflict name, theme and country percentages, your holdings' percentages, headlines | Marking the channels |
+| Your AI (Claude, or the model you use) | Tickers, portfolio percentages, your open views, headlines | Writing the brief |
+| Your AI, for a scan | The conflict name, theme and country percentages, your holdings' percentages, headlines | Marking the channels |
 
 Quantities, amounts and account names stay on disk. A check in code stops
 the run if any of them would reach the AI.
