@@ -15,7 +15,7 @@ crash, and shows how much of your money each one would reach.
 It helps you understand the world and your own relationship with it. It never
 tells you what to buy or sell.
 
-![The Overview page: your mix against the world index, the morning brief, your biggest themes and things to watch](docs/images/overview.png)
+![The Overview page: your mix against the world index and the Nasdaq-100, the morning brief, and your sectors against the sector average](docs/images/overview.png)
 
 Your own AI assistant (Claude Code, or any other AI coding agent) runs it
 on your own machine. There is
@@ -35,8 +35,8 @@ eight pages, in a dark or a light theme:
 
 | Tab | Question it answers |
 |---|---|
-| **Overview** | How did my mix do today and over the past year, next to the world index? What matters this morning, and what is coming up? |
-| **Holdings** | For each holding: its price line, what is inside it (companies, countries, themes), today's news on it, and the state of the themes around it. |
+| **Overview** | How did my mix do today and over the past year, next to the world index and the Nasdaq-100? How do my stocks in each sector do against that sector's average? What matters this morning, and what is coming up? |
+| **Holdings** | My mix against the world index and the Nasdaq-100 over six windows, my sectors against their averages, and for each holding: its price line, what is inside it (companies, countries, themes), today's news on it, and the state of the themes around it. |
 | **News & world** | Which of the 10 geopolitical themes matter to *my* money today, what state each is in, how events ripple from one theme to another (especially into AI), and what to watch next. |
 | **Exposure** | Where is my money actually exposed (AI build-out, defence, oil, India, ...), and how does that compare with a plain world index fund? Which holding puts me into which theme? |
 | **Scenarios** | If a conflict I name broke out, where would it reach my money? A bubble map of every theme and region it touches, my share against the world's. |
@@ -51,7 +51,7 @@ eight pages, in a dark or a light theme:
 </tr>
 <tr>
 <td><img src="docs/images/scenarios.png" alt="Scenarios: a bubble map of where a China blockade of Taiwan would reach the portfolio"><br><b>Scenarios.</b> Where a conflict you name would reach your money.</td>
-<td><img src="docs/images/holdings.png" alt="Holdings: every holding with its moves, 90-day line and biggest themes"><br><b>Holdings.</b> Each holding's moves, what is inside it and its themes.</td>
+<td><img src="docs/images/holdings.png" alt="Holdings: your mix against the world index and the Nasdaq-100, your sectors against their averages, and every holding with its moves"><br><b>Holdings.</b> Your mix and sectors against their benchmarks, and each holding's moves and themes.</td>
 </tr>
 <tr>
 <td><img src="docs/images/views.png" alt="Views: your calls with probabilities, deadlines and today's evidence for or against"><br><b>Views.</b> Your calls, and the news for and against them.</td>
@@ -78,6 +78,24 @@ The brief does not tell you what to think about an event. It gives you a
 fixed way to read one. It must give a line on every theme that is 2% or more
 of your portfolio or that one of your views names, and it leaves out the
 themes that do not touch you.
+
+### Against the Nasdaq and your sectors
+
+The Overview chart draws your mix next to the world index and the
+Nasdaq-100, all in your own currency. Below it, your stocks are grouped by
+sector, and each group is set against that sector's average: the MSCI World
+fund for the sector (for example `XDWS.DE` for consumer staples), over one
+month, three months, the year to date or a year. Funds and cash have no
+single sector, so they stay out of that table. Every line is today's mix
+replayed over the window, not your actual past return.
+
+To compare with another index, add it to `my/settings.yaml`:
+
+```yaml
+compare:
+  Nasdaq-100: EQQQ.DE
+  S&P 500: SXR8.DE
+```
 
 ### Conflict scans
 
@@ -216,6 +234,7 @@ words:
 | "Put my views at the top of the Overview page." | The page, in `web/` |
 | "Add a card showing my exposure to the US dollar." | The numbers in Python, then a card on the page |
 | "Make the accent colour green." | The page's colour tokens |
+| "Compare my mix with the S&P 500 too." | Your settings, `compare:` in `my/settings.yaml` |
 | "On the bet page, start with 6 years of GPU life, and count a crash in credit as evidence for my capex view." | Your bet file, `my/bet.yaml` |
 
 The theme map that ships with whatstocks is a starting opinion, not a fact.
