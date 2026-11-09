@@ -2,11 +2,14 @@
  * biggest themes, what to watch, the top events and the latest conflict scan. */
 import { CategoryBar, YouWorld, type Segment } from "@/components/charts"
 import { EventCard, WatchList } from "@/components/brief"
-import { Chip, Cmd, Empty, Legend, More, Move, PageHeader, Panel, Stat, SubHead, Ticker, YOU_WORLD, type PageProps } from "@/components/kit"
+import { Chip, Cmd, Empty, Legend, More, Move, PageHeader, Panel, Stat, StateMark, SubHead, Ticker, YOU_WORLD, type PageProps } from "@/components/kit"
 import { SectorPanel } from "@/components/sectors"
 import { PriceChart } from "@/components/price-chart"
+import { REGIME_STATE } from "@/lib/bet"
 import { DASH, heat, longDate, pct, pts } from "@/lib/format"
-import type { Model, Scan, ScanTotals, Theme } from "@/lib/types"
+import type { Go } from "@/lib/hooks"
+import type { Bet, Model, Scan, ScanTotals, Theme } from "@/lib/types"
+import { cn } from "@/lib/utils"
 
 const count = (x: number) => String(Math.round(x))
 
@@ -87,6 +90,28 @@ function ScanSummary({ scan }: { scan: Scan }) {
   )
 }
 
+/** The bet in one tile: Python's coverage-now and payback readings and the regime, all at your default settings. */
+function BetStat({ bet, go }: { bet: Bet; go: Go }) {
+  const coverage = bet.signals.indicators.coverage_now?.reading
+  const payback = bet.signals.indicators.payback?.reading
+  const regime = bet.signals.regime
+  const deadline = bet.deadlines[String(bet.signals.at.gpu_life)]
+  return (
+    <Stat
+      label="The bet, coverage now"
+      tip="What end users pay for AI ÷ what the build-out needs back, over the last four quarters, at your default settings."
+      value={typeof coverage === "number" ? <Ticker value={coverage} format={(x) => `${Math.round(x)}%`} /> : DASH}
+      sub={
+        <>
+          <StateMark state={REGIME_STATE[regime.state]} word={regime.label} className="align-[-1px]" />
+          {typeof payback === "number" && ` · payback ${Math.round(payback)}%${deadline ? ` by ${deadline.date.slice(0, 4)}` : ""}`}
+        </>
+      }
+      onClick={() => go("bet")}
+    />
+  )
+}
+
 export function Overview({ model, go }: PageProps) {
   const port = model.performance.returns.portfolio ?? {}
   const world = model.performance.returns.world ?? {}
@@ -105,7 +130,7 @@ export function Overview({ model, go }: PageProps) {
         title="Overview"
         sub={`${longDate(model.date)} · shares of your portfolio, valued in ${model.home}, next to a world index fund`}
       />
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
+      <div className={cn("grid grid-cols-2 gap-3 md:grid-cols-3", model.bet ? "xl:grid-cols-6" : "xl:grid-cols-5")}>
         <Stat label="Today" value={<Move value={port["1D"]} count />} sub={<>World index <Move value={world["1D"]} /></>} />
         <Stat
           label="Past year, today's mix"
@@ -131,6 +156,7 @@ export function Overview({ model, go }: PageProps) {
           sub={deadline ? `Next deadline ${longDate(deadline)}` : <>Write one with <Cmd>/setup</Cmd></>}
           onClick={() => go("views")}
         />
+        {model.bet && <BetStat bet={model.bet} go={go} />}
       </div>
 
       <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">

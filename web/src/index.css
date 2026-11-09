@@ -96,7 +96,10 @@
 
 /* Colours checked with the dataviz validator on these surfaces (docs/DASHBOARD.md section 4):
    you/world pass both colour-blind checks (world is a deliberate grey, so it is also dashed and labelled);
-   pos/neg is the validated blue-red diverging pair; c1-c8 is the validated categorical order. */
+   pos/neg is the validated blue-red diverging pair; c1-c8 is the validated categorical order.
+   warn is the amber state on "Will the bet pay off?": with pos and neg it passes both colour-blind checks
+   (clear ● blue, amber ◆, red ▲). It is for marks only, never text: in light it is too pale for words (2.4:1), so
+   a word beside it stays in ink. */
 :root,
 :root[data-theme="dark"] {
   color-scheme: dark;
@@ -144,7 +147,7 @@
   --pos: #2a78d6;
   --neg: #e34948;
   --mid: #e4e4e7;
-  --warn: #9a6100;
+  --warn: #e09b00;
   --c1: #2a78d6;
   --c2: #eb6834;
   --c3: #1baf7a;

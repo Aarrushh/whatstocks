@@ -8,6 +8,7 @@ from pathlib import Path
 import pytest
 from conftest import TODAY, good_brief
 
+from whatstocks import brief as briefs
 from whatstocks import morning, render
 from whatstocks.files import Problems
 
@@ -76,9 +77,27 @@ def test_page_is_self_contained_and_shows_shares_only(user, fake_world):
     _, model = embedded(page)
     assert model == json.loads((user.out / "dashboard.json").read_text("utf-8"))  # the same data, readable alone
     assert model["version"] == render.VERSION and model["lead"] == {"kind": "none", "text": render.NO_BRIEF}
-    # Percentages only (P4): no quantities, amounts, accounts or ISINs from holdings.csv.
+    # Never your amounts (P4): no quantities, amounts, accounts or ISINs from holdings.csv.
     assert not keys(model) & {"quantity", "value", "amount", "account", "isin"}
     assert "Broker A" not in page and "IE00BK5BQT80" not in page
+
+
+def test_the_bet_block_carries_both_models_the_panels_and_each_paths_reach(user, fake_world):
+    morning.prepare(user, today=TODAY)
+    page = morning.finish(user, no_brief=True, today=TODAY).read_text("utf-8")
+    _, model = embedded(page)
+    bet = model["bet"]
+    assert render.VERSION == model["version"] == 4
+    assert {"capex", "valuation", "demand", "units", "clock", "signals", "releases", "analogs", "panels"} <= set(bet)
+    assert len(bet["quarters"]) == 44 and bet["capex"]["grid"] and bet["demand"]["grid"]
+    assert set(bet["reach"]) == {"capex_retrenchment", "equity_drawdown", "credit_event", "price_collapse",
+                                 "adoption_pace"}
+    # Public companies' figures in dollars, never yours (P4): no money key anywhere in the block.
+    assert not keys(bet) & (briefs.MONEY_KEYS | {"account", "isin"})
+    assert len(page.encode("utf-8")) < 2_500_000  # the page's size budget (spec 7)
+    (user.out / "bet.json").unlink()  # an out folder from before the bet page
+    _, model = embedded(morning.finish(user, no_brief=True, today=TODAY).read_text("utf-8"))
+    assert model["bet"] is None
 
 
 def test_every_page_gets_the_brief(user, fake_world):

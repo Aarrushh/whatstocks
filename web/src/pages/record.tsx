@@ -1,6 +1,6 @@
 /** Record: were your calls right, and did your trades follow your own views? Append-only, scored in code. */
 import { TriangleAlert } from "lucide-react"
-import { Empty, Move, PageHeader, Panel, Tag, type PageProps } from "@/components/kit"
+import { Caution, Empty, Move, PageHeader, Panel, Tag, type PageProps } from "@/components/kit"
 import { DASH, longDate, plural } from "@/lib/format"
 
 export function RecordPage({ model, go }: PageProps) {
@@ -22,7 +22,7 @@ export function RecordPage({ model, go }: PageProps) {
               <p className="mt-1 text-xs leading-relaxed text-ink-2">
                 over {plural(s.count, "resolved view")}. Lower is better; always saying 50% scores {s.coin_flip.toFixed(2)}.
               </p>
-              {s.luck && <p className="mt-2 text-xs text-warn">Under 20 resolved views, the score is mostly luck.</p>}
+              {s.luck && <Caution className="mt-2">Under 20 resolved views, the score is mostly luck.</Caution>}
             </>
           ) : (
             <Empty>No views have resolved yet. The score starts with the first one.</Empty>

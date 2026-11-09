@@ -57,13 +57,13 @@ def test_the_scan_file_is_checked(ready):
     bad = scan_file(TODAY.isoformat())
     bad["channels"][0].update(effect="crash", strength="huge")
     bad["channels"].append({"kind": "region", "id": "Atlantis", "effect": "hurt", "strength": "low", "why": "Sunk."})
-    bad["analogs"] = [{"name": "Too early", "start": "2019-01-01", "end": "2019-02-01", "why": "Before the prices."},
+    bad["analogs"] = [{"name": "Too early", "start": "2017-01-01", "end": "2017-02-01", "why": "Before the prices."},
                       {"name": "Not over", "start": "2026-10-01", "end": "2026-11-03", "why": "Still running."}]
     bad["summary"] = "You should sell chips. See https://example.com"
     errors, advice = scan.validate(bad, payload)
     text = "\n".join(errors)
     for part in ("channel 1: effect must be hurt, help or mixed", "channel 1: strength must be low, medium or high",
-                 "channel 4: unknown region 'Atlantis'", "analog 1: prices start on 2019-12-01",
+                 "channel 4: unknown region 'Atlantis'", "analog 1: prices start on 2018-01-01",
                  "analog 2: must end before today", "contains a link"):
         assert part in text
     assert len(advice) == 1

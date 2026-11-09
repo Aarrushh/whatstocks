@@ -1,8 +1,10 @@
 # The dashboard, v0.3: plan and design rules
 
 Status: planned and built 2026-11-04 (v0.3). It replaces the HTML that `render.py` wrote by hand with a React
-page that is still one self-contained file. Section 7 records what changed while building it. The product rules in [SPEC.md](SPEC.md) do not change: code computes every
-number, the AI writes words with sources, the page shows percentages only and never recommends.
+page that is still one self-contained file. Section 7 records what changed while building it, and section 8 the
+eighth page, "Will the bet pay off?" (v0.4, 2026-11-07). The product rules in [SPEC.md](SPEC.md) do not change:
+code computes every number (with the two exceptions SPEC section 2 lists for the bet page), the AI writes words
+with sources, the page shows your holdings as percentages and never your amounts, and it never recommends.
 
 ## 1. What we took from the advice, and what we did not
 
@@ -17,7 +19,7 @@ motion, and a command palette.
 | Next.js App Router | No: Vite | There is no server. Next's static export writes many files with absolute paths that do not open from disk. Vite builds one HTML file with everything inlined, which keeps the promise that the page is one file that opens offline and fetches nothing. |
 | FastAPI or SQLite backend | No | Python already computes every number and writes files, and the record is an append-only JSONL file (P7). A server would add a process, a port and an attack surface to a page that only reads. |
 | Optimistic UI updates | Not needed | The page never writes (P8). Views and decisions change in Claude Code, where the record stays honest. |
-| ⌘K palette and keyboard shortcuts | Yes | Jump to any page, holding, theme, view or scan, and copy the `/morning` or `/scan` command for Claude Code. |
+| ⌘K palette and keyboard shortcuts | Yes | Jump to any page, holding, theme, view, scan, crash path or bet indicator, and copy the `/morning`, `/bet` or `/scan` command for Claude Code. |
 | Monochrome base, hairline borders, one accent, Geist and Geist Mono, tabular numbers, bento grid, small radii | Yes | Section 4. |
 
 ## 2. Architecture
@@ -61,7 +63,8 @@ Code.
 - **Colour.** Monochrome, plus one accent, international orange, for "you" and for active states. The world
   index is grey. One polarity pair (help, up, for against hurt, down, against) is checked with the
   colour-blind validator in both themes. A colour never carries meaning alone: signs, words or icons go
-  with it.
+  with it. The bet page's states add one amber, `--warn`, for marks only: every state is a shape and a word
+  (● clear, ◆ amber, ▲ red, ○ no data).
 - **Type.** Geist for words, Geist Mono with tabular figures for every number, date and axis label.
 - **Density.** 13 to 14px body text, cards padded 16px, radius 8px at most (6px on controls), tight headings.
 - **Motion.** Transform and opacity only, springs at stiffness 380 and damping 30, never `transition-all`,
@@ -75,9 +78,10 @@ Code.
 A 12-column bento grid on desktop, one column on a phone. The primary cards of each page sit above the fold
 at 1440 by 900.
 
-- **Overview.** Five figures (today, past year with today's mix, biggest tilt, news today, open views). The
-  price line against the world index, next to the morning brief and the themes that matter today. Top
-  events, things to watch, and your biggest themes against the world. The latest conflict scan.
+- **Overview.** Five figures (today, past year with today's mix, biggest tilt, news today, open views), and a
+  sixth when there is a bet: coverage now, with the regime and payback by the deadline. The price line
+  against the world index, next to the morning brief and the themes that matter today. Top events, things to
+  watch, and your biggest themes against the world. The latest conflict scan.
 - **Holdings.** Your mix against the world index over six periods. One row per holding (weight, moves, a
   90-day spark line, its themes), sortable with a segmented control. A row opens into its card: the price
   line, what is inside it, today's news on it and the world around it.
@@ -90,8 +94,13 @@ at 1440 by 900.
   watch, the channel table. With no scans yet: how to run one, with the command ready to copy.
 - **Views.** One card per view: the probability, its path over time, the deadline, evidence for and against.
 - **Record.** The Brier score, resolved views, decisions with their flags, what happened after.
+- **The bet** ("Will the bet pay off?", SPEC section 3.6). The regime and the cash clock. The hero: what
+  the build-out needs back against what end users pay, with three readouts and what the need implies, beside
+  the sliders and switches. A card for each crash path and for adoption pace, with each indicator on its
+  scale and your reach next to the world's. The adoption funnel and the grades. The four pillars.
+  Open-weight releases and the analogs. Every threshold, and every source with what is due.
 
-Keys: ⌘K, Ctrl K or `/` opens the palette, `1` to `7` switch pages, `T` switches the theme, Esc closes.
+Keys: ⌘K, Ctrl K or `/` opens the palette, `1` to `8` switch pages, `T` switches the theme, Esc closes.
 
 ## 6. Steps
 
@@ -129,3 +138,19 @@ Keys: ⌘K, Ctrl K or `/` opens the palette, `1` to `7` switch pages, `T` switch
   reads <0.1%, in the page and in `geometry.pct`.
 - **Size.** The page is about 1.2 MB, almost all of it React, Recharts and the two inlined fonts. It opens
   from disk without a network.
+
+## 8. The bet page (v0.4)
+
+- **One amber.** `--warn` (#f5b041 dark, #e09b00 light) marks an amber state. It is for marks only: amber text
+  is too pale on white, so words beside it stay in ink (`StateMark`, `Caution` in `kit.tsx`).
+- **No red in the hero.** The demand tiers use `--c1` to `--c5`, and `--c2` is an orange, so the gap between
+  the curves is hatched in ink rather than tinted with `--neg`, and the valuation target is drawn in `--c7`.
+- **The page's arithmetic.** It adds the pieces you leave switched on, divides two such sums, multiplies by
+  Python's unit factors and runs the cash clock: the two exceptions to P2 in SPEC section 2. `bet.test.ts`
+  checks them against the demo's figures. The regime, the paths and every indicator are Python's, and the
+  Overview tile shows Python's readings, not the page's.
+- **Layout.** From 1280px the hero takes 8 columns and the controls 4. Below that both take the full width,
+  with the sliders and the switches side by side, and on a phone they stack. The deadline label sits a line
+  below the last-actual label, so the two never collide.
+- **Legend swatches** gained `hatch` (the gap) and `tri` (an open-weight release).
+- **Size.** About 1.8 MB with the demo's bet data: Python precomputes every slider step for every piece.

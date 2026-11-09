@@ -7,6 +7,11 @@ index fund, and how a conflict would ripple through your holdings. You can
 also write down what you think will happen, and it keeps score of your calls
 over time.
 
+New in v0.4: [Will the bet pay off?](#will-the-bet-pay-off), a page on the
+AI build-out. It sets what the build-out needs to earn back each year
+against what end users actually pay for AI, tracks four ways it could
+crash, and shows how much of your money each one would reach.
+
 It helps you understand the world and your own relationship with it. It never
 tells you what to buy or sell.
 
@@ -17,15 +22,16 @@ on your own machine. There is
 no server and no account, and your amounts never leave your computer (see
 [What leaves your computer](#what-leaves-your-computer)).
 
-> **Status: early (v0.3).** The whole pipeline, the seven-page dashboard and
-> conflict scans run on the demo user, and the tests pass offline. Expect
-> rough edges. The design is in [docs/SPEC.md](docs/SPEC.md), and the page's
-> design in [docs/DASHBOARD.md](docs/DASHBOARD.md).
+> **Status: early (v0.4).** The whole pipeline, the eight-page dashboard,
+> conflict scans and "Will the bet pay off?" run on the demo user, and the
+> tests pass offline. Expect rough edges. The design is in
+> [docs/SPEC.md](docs/SPEC.md), and the page's design in
+> [docs/DASHBOARD.md](docs/DASHBOARD.md).
 
 ## What you see each morning
 
 One page, `dashboard.html`, that works offline and fetches nothing. It has
-seven pages, in a dark or a light theme:
+eight pages, in a dark or a light theme:
 
 | Tab | Question it answers |
 |---|---|
@@ -36,6 +42,7 @@ seven pages, in a dark or a light theme:
 | **Scenarios** | If a conflict I name broke out, where would it reach my money? A bubble map of every theme and region it touches, my share against the world's. |
 | **Views** | What do I think will happen, how sure am I, and what did today's news say for or against it? |
 | **Record** | Were my past calls right? Did my trades follow my own views? |
+| **The bet** | Will the AI build-out pay off? Is the world adopting AI fast enough, and paying enough for it, to earn back what is being spent? Which of four possible crashes are flashing, and how much of my money would each reach? |
 
 <table>
 <tr>
@@ -55,7 +62,7 @@ seven pages, in a dark or a light theme:
 The screenshots show the demo: a fictional investor, not a real portfolio.
 
 Press `Ctrl K` (`⌘K` on a Mac) or `/` to jump to any page, holding, theme,
-view or scan, or to copy a command for Claude Code. `1` to `7` switch pages,
+view, scan or crash path, or to copy a command for Claude Code. `1` to `8` switch pages,
 `T` switches the theme and `Esc` closes a card. Every mark on a chart has a
 hover tip.
 
@@ -82,6 +89,34 @@ computes how much of your portfolio, and of the world index, each one reaches
 today's holdings did in past episodes your AI picks. The Scenarios tab draws
 it as a bubble map. A scan is a map of where a conflict would reach your
 money, not a forecast.
+
+### Will the bet pay off?
+
+AI infrastructure is built like a utility: the money goes out now, as
+capex, and comes back only as the world adopts AI and pays for it. The bet
+page puts two curves on one chart: what end users must pay for AI each year
+for the build-out to earn back its cost, and what they actually pay, in
+tiers from the most solid (paying customers) to the least (investor money
+paying for compute). The bet pays off if the second catches the first
+before the GPUs bought in 2024 to 2026 are written off.
+
+![The bet page: what the AI build-out needs back each year against what end users pay, with the regime, the three readouts and the sliders](docs/images/bet.png)
+
+Sliders change the assumptions (GPU life, cost of capital, how fast prices
+fall), and every piece of both curves can be switched off to see what it
+does to the answer. Around the chart: four ways it could crash (capex cuts,
+an equity drawdown, a credit event, a price collapse) and the pace of
+adoption, each with visible amber and red levels; how much of your
+portfolio each would reach, next to the world index; and every figure with
+its source and its grade.
+
+Python computes every number. The figures the code cannot fetch sit in a
+sourced ledger. Type `/bet` when you want the stale ones brought up to date:
+your AI lists what is due, looks for each figure, and shows you each one
+with its source before it writes anything. When a crash path changes state,
+the morning brief says so, and it counts as evidence for or against the
+views you link to it. The page shows no probability of a crash, and never
+suggests one.
 
 ## What it will never do
 
@@ -125,6 +160,7 @@ claude
 > /setup      # import a broker CSV, write your first 2-3 views
 > /morning    # every morning: refresh, read the news, build the page
 > /scan       # any time: "China blockade of Taiwan", "Iran war", ...
+> /bet        # when you like: bring the bet page's figures up to date
 ```
 
 `/setup` creates a `my/` folder. Git ignores it, so your own data never ends
@@ -151,7 +187,7 @@ on the demo folder" for a scan.
 whatstocks is built around Claude Code, but nothing in it needs Claude. Any
 AI coding agent that can read files and run commands in this folder can run
 it: Codex, Cursor, Copilot, Gemini CLI, or a local model. The slash commands
-are Claude Code's shortcuts for three instruction files, so with another
+are Claude Code's shortcuts for four instruction files, so with another
 agent, ask it to follow the file instead:
 
 | In Claude Code | With any other agent |
@@ -159,6 +195,7 @@ agent, ask it to follow the file instead:
 | `/setup` | "Follow `.claude/skills/setup/SKILL.md`." |
 | `/morning` | "Follow `.claude/skills/morning/SKILL.md`." |
 | `/scan Iran war` | "Follow `.claude/skills/scan/SKILL.md` for: Iran war." |
+| `/bet` | "Follow `.claude/skills/bet/SKILL.md`." |
 
 The checks that keep your amounts away from the AI, and advice out of the
 brief, are in the code, so they work the same whichever model you use.
@@ -179,6 +216,7 @@ words:
 | "Put my views at the top of the Overview page." | The page, in `web/` |
 | "Add a card showing my exposure to the US dollar." | The numbers in Python, then a card on the page |
 | "Make the accent colour green." | The page's colour tokens |
+| "On the bet page, start with 6 years of GPU life, and count a crash in credit as evidence for my capex view." | Your bet file, `my/bet.yaml` |
 
 The theme map that ships with whatstocks is a starting opinion, not a fact.
 If you see the world differently, change it: your changes sit in your own
@@ -217,7 +255,7 @@ neither by itself, start by telling it: "Read CLAUDE.md first."
 
 | What happened | How to undo it |
 |---|---|
-| A change to your holdings, views or themes | Copy the file back from `my/backups/<date>/` |
+| A change to your holdings, views, themes or bet figures | Copy the file back from `my/backups/<date>/` |
 | A code or page change you don't like | `git switch main` |
 | A change to one file that is not committed yet | `git restore <file>` |
 | The page looks broken | `uv run pytest`, then ask your AI to fix what fails |
@@ -230,13 +268,16 @@ your computer.
 
 | Goes to | What | Why |
 |---|---|---|
-| Yahoo Finance | The ticker symbols you hold, plus the theme proxy ETFs | Daily prices |
+| Yahoo Finance | The ticker symbols you hold, plus the theme proxy ETFs and the AI companies the bet page follows | Daily prices, and those companies' share counts |
 | European Central Bank | Currency codes | Exchange rates |
 | iShares | A request for the MSCI ACWI holdings file | Looking through funds |
 | News feeds and Google News | The theme search queries in `themes/themes.yaml` | The day's news |
 | Google News | The conflict name you type for a scan | The scan's news |
-| Your AI (Claude, or the model you use) | Tickers, portfolio percentages, your open views, headlines | Writing the brief |
+| FRED (St. Louis Fed) | Four fixed series ids | The bet page's adoption survey and credit spreads |
+| SEC EDGAR, only if you set `sec_contact:` in `settings.yaml` | The name and email you set (the SEC asks every client for one), and the AI companies' SEC ids | The bet page's capex and cash-flow figures |
+| Your AI (Claude, or the model you use) | Tickers, portfolio percentages, your open views, headlines, and the bet page's states and readings (as shares, never dollars) | Writing the brief |
 | Your AI, for a scan | The conflict name, theme and country percentages, your holdings' percentages, headlines | Marking the channels |
+| Your AI, for `/bet` | The bet page's due list (public figures about companies) and its web searches for them | Finding each figure, with its source |
 
 Quantities, amounts and account names stay on disk. A check in code stops
 the run if any of them would reach the AI.
@@ -252,6 +293,10 @@ the run if any of them would reach the AI.
   change it. Partial members count half.
 - Theme betas from calm years understate how closely things move together
   in a real crash.
+- The bet page is only as fresh as its ledger. Figures go stale between
+  `/bet` runs, and several of its judgment calls (the exit multiple, the
+  stack's profit share, running costs) are estimates that still need a
+  source. Each one is graded on the page, so you can see what rests on what.
 
 ## Development
 

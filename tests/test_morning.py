@@ -109,8 +109,9 @@ def test_blind_spots():
 def test_cli(user, capsys):
     assert cli.main(["--dir", str(user.path), "check"]) == 0
     out = capsys.readouterr().out
-    assert "OK: 7 holdings, 3 open views, 3 decisions, 10 themes." in out
+    assert "OK: 7 holdings, 3 open views, 3 decisions, 12 themes." in out
     assert "In no theme yet" not in out
+    assert "Ledger: " in out and "(0 yours)" in out
     assert cli.main(["--dir", str(user.path / "missing"), "check"]) == 2
     user.views.write_text("views: [", "utf-8")
     assert cli.main(["--dir", str(user.path), "check"]) == 1

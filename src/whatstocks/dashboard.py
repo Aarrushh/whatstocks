@@ -36,7 +36,7 @@ def todays_brief(user: UserDir, today: dt.date) -> dict | None:
 
 def blind_spots(exposure: dict, evidence: list[dict], today: dt.date) -> list[dict]:
     """Themes busy in the news this week where the user has nothing, or under a quarter of the world's share."""
-    week = [e for e in evidence if (today - dt.date.fromisoformat(e["date"])).days < 7]
+    week = [e for e in evidence if (today - dt.date.fromisoformat(e["date"])).days < 7 and not record.is_signal(e)]
     counts = Counter(tid for e in week for tid in e["themes"])
     out = []
     for tid, n in counts.items():
@@ -56,7 +56,7 @@ def news_heat(evidence: list[dict], theme_ids: list[str], today: dt.date, days: 
     dates = [(today - dt.timedelta(days=i)).isoformat() for i in range(days - 1, -1, -1)]
     counts = {tid: Counter() for tid in theme_ids}
     for e in evidence:
-        for tid in e.get("themes", []):
+        for tid in ([] if record.is_signal(e) else e.get("themes", [])):
             if tid in counts:
                 counts[tid][e["date"]] += 1
     return {"dates": dates, "rows": {tid: [counts[tid][d] for d in dates] for tid in theme_ids}}
@@ -177,11 +177,13 @@ def context(user: UserDir, book: Book, today: dt.date, brief: dict | None, banne
         "reviews": record.reviews(book, today, series_of, series_of(book.settings.benchmark)),
         "record_watch": record_watch(book, today),
         "scans": scans(out),
+        # "Will the bet pay off?": both models, the signals and the panels; prepare writes it, with no holdings in it.
+        "bet": read_json(out / "bet.json") if (out / "bet.json").exists() else None,
     }
 
 
 def write(user: UserDir, book: Book, today: dt.date, brief: dict | None, banners: list[str]) -> Path:
-    """The page, and next to it the view model it carries (dashboard.json, percentages only), which the page's
+    """The page, and next to it the view model it carries (dashboard.json, never your amounts), which the page's
     development server in web/ reads."""
     model = render.view_model(context(user, book, today, brief, banners))
     (user.out / "dashboard.json").write_text(json.dumps(model, ensure_ascii=False, default=str), "utf-8")

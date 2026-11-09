@@ -140,3 +140,33 @@ themes:
       BDRY tracks dry-bulk freight futures, not shipping shares, so theme
       beta here measures sensitivity to freight rates. Tankers and container
       lines can react in opposite ways to the same chokepoint event.
+
+  hyperscalers:
+    label: Hyperscalers
+    description: >-
+      The four largest cloud and AI spenders. Their capex is the AI
+      build-out's demand, and their cash flow pays for most of it.
+    proxy: MAGS
+    news_query: 'hyperscalers OR "cloud computing" OR "AI spending"'
+    members:
+      core: [MSFT, GOOGL, GOOG, AMZN, META]
+      partial: []
+    notes: >-
+      MAGS holds the Magnificent Seven, four of which are these companies,
+      so it stands in as the price proxy. The same companies are partial
+      members of the AI build-out, where their capex is the revenue.
+
+  ai_lessors:
+    label: AI lessors and neoclouds
+    description: >-
+      Companies that build or lease AI data-centre capacity to the labs and
+      hyperscalers, often with debt: Oracle's AI cloud, the neoclouds and
+      former bitcoin miners.
+    proxy: DTCR
+    news_query: 'neocloud OR "GPU cloud" OR "data center lease"'
+    members:
+      core: [ORCL, CRWV, NBIS, IREN, APLD]
+      partial: []
+    notes: >-
+      Their borrowing makes them the credit path's canaries. DTCR, a fund of
+      data-centre and digital-infrastructure companies, is a loose proxy.

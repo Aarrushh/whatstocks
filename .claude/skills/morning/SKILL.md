@@ -25,6 +25,12 @@ add `--dir <folder>` to every command when it is not `my/`.
    - `views`: the user's open views, with their probabilities. Read them; never
      change them.
    - `news`: today's items (id, title, source, published).
+   - `bet`: "Will the bet pay off?", worked out by the code at the user's
+     default settings: the `regime` now and when it was last logged
+     (`last_logged`), each crash path's state (`paths`), `adoption_pace`,
+     `coverage_now` and `payback_by_deadline` (demand over the need, as
+     fractions), whether the regime or a path `changed` since the last brief,
+     and `indicators_changed`, each with its `reading` as text.
 3. Write `my/out/brief.json` by the rules below.
 4. Run `uv run whatstocks finish`.
    - If it lists problems with brief.json, fix the brief and run it once more.
@@ -32,7 +38,7 @@ add `--dir <folder>` to every command when it is not `my/`.
      user why the brief was left out.
    - Never pass `--allow-advice` yourself. That is the user's call.
 5. Tell the user where the dashboard is, and give the summary line from the
-   brief. Add no opinions of your own.
+   brief, and the bet line if there is one. Add no opinions of your own.
 
 ## How to read the news: four questions per event
 
@@ -74,6 +80,13 @@ none of the themes, holdings or views. At most 10 events, most relevant first.
   data release or ruling the news mentions. Give `when` (YYYY-MM-DD) only when
   an item states the date; leave it out otherwise, and never a past date.
   Tag the `themes` and `holdings` it would reach, and cite `news_ids`.
+- **`bet`: one line on "Will the bet pay off?"** Required when the payload's
+  `bet.changed` is true; leave it out on a day nothing moved. `line` says, in
+  one or two sentences (at most 400 characters), which path or the regime
+  moved, from what to what, and the readings behind it, worded as
+  `indicators_changed` words them. Add no figure of your own, and do not
+  forecast the regime or say what it means for any holding. `news_ids`: today's
+  items that bear on it, if any (an empty list is fine).
 
 ## Rules
 
@@ -118,9 +131,11 @@ none of the themes, holdings or views. At most 10 events, most relevant first.
   ],
   "watch": [
     {"what": "OPEC+ meets again on output.", "when": "2026-12-01", "themes": ["oil_gas"], "holdings": ["SHEL.L"], "news_ids": ["a1b2c3d4e5"]}
-  ]
+  ],
+  "bet": {"line": "The equity drawdown path went from clear to amber: the AI basket is 28.9% from its high on 2026-06-22.", "news_ids": []}
 }
 ```
 
 `date` must equal the payload's date. `touches`, `views`, `holdings`,
-`ripples` and `watch` may be empty lists.
+`ripples` and `watch` may be empty lists. `bet` is required when the payload's
+`bet.changed` is true, and may be left out otherwise.

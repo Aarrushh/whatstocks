@@ -1,6 +1,7 @@
 /** Views: your calls, in your words, with your probability over time and the evidence the briefs logged. A view
  * in the address (#views/ai-capex-cut-2027) is scrolled to and outlined. */
 import { useEffect } from "react"
+import { TriangleAlert } from "lucide-react"
 import { EffectTag } from "@/components/brief"
 import { CategoryBar, ForecastLine } from "@/components/charts"
 import { Banner, Cmd, Empty, Legend, PageHeader, Panel, Sources, SubHead, type PageProps } from "@/components/kit"
@@ -19,7 +20,8 @@ function ViewCard({ view: v, model, go, active }: { view: View; model: Model; go
       className={cn(active && "ring-you/50")}
       title={<span className="num text-xs font-normal text-ink-3">{v.id}</span>}
       action={
-        <span className={cn("num text-xs", v.due ? "text-warn" : "text-ink-2")}>
+        <span className="num inline-flex items-center gap-1 text-xs text-ink-2">
+          {v.due && <TriangleAlert className="size-3 shrink-0 text-warn" aria-hidden />}
           {v.due ? "past its deadline" : `${plural(v.days_left, "day")} left`}
         </span>
       }

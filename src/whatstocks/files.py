@@ -41,6 +41,7 @@ def write_json(path: Path, data) -> None:
 class Settings:
     home_currency: str
     benchmark: str
+    sec_contact: str = ""  # a name and email for the SEC's EDGAR (it asks every client for one); EDGAR is off without it
     # Extra indices to compare your mix with, name -> Yahoo symbol (for example Nasdaq-100: EQQQ.DE).
     compare: dict[str, str] = field(default_factory=dict)
 
@@ -202,11 +203,15 @@ def load_settings(path: Path, problems: list[str]) -> Settings:
     benchmark = str(data.get("benchmark") or "")
     if not benchmark:
         problems.append(f"{path.name}: benchmark is missing")
+    contact = _clean(data.get("sec_contact"))
+    if contact and not re.search(r"[^@\s]+@[^@\s]+\.[^@\s]+", contact):
+        problems.append(f"{path.name}: sec_contact needs an email address, such as 'Jane Doe jane@example.com' "
+                        f"(the SEC asks for a name and email)")
     compare = data.get("compare") or {}
     if not isinstance(compare, dict) or not all(str(k).strip() and str(v).strip() for k, v in compare.items()):
         problems.append(f"{path.name}: compare must be a list of name: symbol lines, for example 'Nasdaq-100: EQQQ.DE'")
         compare = {}
-    return Settings(home, benchmark, {str(k).strip(): str(v).strip() for k, v in compare.items()})
+    return Settings(home, benchmark, contact, {str(k).strip(): str(v).strip() for k, v in compare.items()})
 
 
 def load_holdings(path: Path, problems: list[str], funds: set[str]) -> list[Holding]:

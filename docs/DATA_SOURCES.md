@@ -101,8 +101,44 @@ separate measure.
 about 20%. That one tagging choice moves the headline number by 5 points,
 which is why the page must list the names it counted.
 
+## Sources for the bet page (2026-11-07)
+
+"Will the bet pay off?" ([SPEC](SPEC.md) section 3.6) needs figures that no price feed carries. The code fetches
+what it can without a key. Everything else sits in a sourced ledger.
+
+| Source | Used for | Result | Verdict |
+|---|---|---|---|
+| FRED, keyless CSV (`fred.stlouisfed.org/graph/fredgraph.csv?id=`) | Generative-AI adoption from the St. Louis Fed's Real-Time Population Survey (all adults, and at work); the ICE BofA US high-yield and investment-grade spreads | All four series came back with no key. ICE's licence limits the spreads to the last three years, so 2022 is not there. | **Use**, at most once a day |
+| Yahoo via `yfinance` | Shares outstanding for the public AI stack, for its market values | 13 of 13 symbols returned a share count. | **Use**, at most once a week |
+| SEC EDGAR company-concept API (`data.sec.gov`) | Cash capex, operating cash flow, depreciation, backlog and Nvidia's revenue, from 10-Q and 10-K filings | The SEC asks every client for a name and an email in the User-Agent. The parser is tested offline, on made-up documents in the format data.sec.gov serves. It has not been run live: no contact is set. | **Off until `sec_contact:` is set** in `settings.yaml`. The ledger's filed figures stand in. |
+| The ledger (`sources/bet/`) | Everything else: lab revenue and valuations, guidance, prices per token, rental indexes, credit default swaps and ratings, usage, the funnel, open-weight releases, the analogs | 865 figures in 74 series, each with a source link, the date it was read and a grade: 449 filed, 212 company, 114 press, 90 estimate. | **Use**, kept up to date with `/bet` |
+
+How the code fetches:
+
+- **EDGAR.** Cash flows in a 10-Q are year to date, so the code takes differences between quarters. A fiscal
+  quarter counts in the calendar quarter it ends in (Microsoft's fiscal 2027 Q1 is 2026Q3).
+- **A fetched figure** replaces the ledger's shipped figure for the same series, company and period, and
+  `whatstocks check` lists any more than 1% from the figure it meets. A figure of yours in `my/bet.yaml` stays.
+- **Offline**, `prepare --offline` reads the caches only (`my/cache/bet/`). A source that cannot be reached
+  leaves its cache as it was.
+
+The ledger's families of sources, by grade:
+
+- **Filed:** SEC filings, the Census Bureau's construction spending, and FRED.
+- **Company:** earnings calls and releases, company blogs and price pages (OpenAI, Anthropic, Google, Microsoft),
+  TSMC's monthly revenue reports, the Ramp AI Index and OpenRouter's token counts.
+- **Press:** reporting on private labs' revenue, valuations and compute costs.
+- **Estimate:** analysts and research firms such as Menlo Ventures, Epoch, TrendForce, and Silicon Data's GPU
+  rental indexes.
+
+The judgment parameters in `model.yaml` (running costs, the exit multiple, the stack's profit share and others)
+are estimates that still need a source. `whatstocks bet due` lists them among the 22 gaps the research could not
+fill, with others such as a valuation for xAI, Nebius's quarterly capex, and the ad revenue Meta and Google credit
+to AI.
+
 ## Not yet tested
 
 - **Vanguard holdings for VWCE** (FTSE All-World). If no stable file exists, VWCE can be looked through with the ACWI file and labelled "approximated with MSCI ACWI". The two indexes overlap heavily but are not the same.
 - **Other issuers:** SPDR, Invesco, Amundi and Xtrackers.
-- **FRED and EIA**, which need free keys and are only used to resolve views.
+- **SEC EDGAR, live** (see above).
+- **EIA**, and FRED's keyed API, which would only be used to resolve views.

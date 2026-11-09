@@ -8,6 +8,7 @@ ROOT = Path(__file__).resolve().parents[2]
 THEMES_FILE = ROOT / "themes" / "themes.yaml"
 FUNDS_FILE = ROOT / "sources" / "funds.yaml"
 FEEDS_FILE = ROOT / "sources" / "feeds.yaml"
+BET_DIR = ROOT / "sources" / "bet"  # the shipped ledger of "Will the bet pay off?"
 
 
 @dataclass(frozen=True)
@@ -33,6 +34,10 @@ class UserDir:
     @property
     def themes(self) -> Path:
         return self.path / "themes.yaml"
+
+    @property
+    def bet(self) -> Path:
+        return self.path / "bet.yaml"
 
     @property
     def cache(self) -> Path:

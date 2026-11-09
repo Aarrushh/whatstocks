@@ -12,11 +12,12 @@ The product rules are in [docs/SPEC.md](docs/SPEC.md). The page's design rules a
 
 | Path | Whose | Notes |
 |---|---|---|
-| `my/` | The user's | Holdings, views, decisions, settings, theme additions, cache, output. Git ignores it. It exists on this computer only, so a lost file is gone for good. |
+| `my/` | The user's | Holdings, views, decisions, settings, theme additions, their figures and levels for the bet page (`bet.yaml`), cache, output. Git ignores it. It exists on this computer only, so a lost file is gone for good. |
 | `themes/themes.yaml`, `sources/*.yaml` | Shipped | The starter theme map, the funds that can be looked through, the news feeds. |
+| `sources/bet/*.yaml` | Shipped | The bet page's ledger ("Will the bet pay off?", SPEC 3.6): every figure the code cannot fetch, with its source, plus the models' settings, the thresholds and the open-weight releases. |
 | `src/whatstocks/` | Shipped | Python: every number is computed here. |
 | `web/` | Shipped | The React page, built into `src/whatstocks/assets/dashboard.html`. |
-| `.claude/skills/` | Shipped | `/setup`, `/morning`, `/scan`. Agents without slash commands follow each `SKILL.md` file as written. |
+| `.claude/skills/` | Shipped | `/setup`, `/morning`, `/scan`, `/bet`. Agents without slash commands follow each `SKILL.md` file as written. |
 | `demo/`, `tests/` | Shipped | A fictional user and the offline tests. |
 
 ## 2. Where each change goes: use the lowest level that does the job
@@ -25,7 +26,8 @@ The product rules are in [docs/SPEC.md](docs/SPEC.md). The page's design rules a
 |---|---|---|---|
 | 1. Their data | New holdings, a view, a decision, another currency or benchmark | `my/*.yaml`, `my/holdings.csv`, through `/setup` (its "Later" section) | Low. Run `uv run whatstocks check` after. |
 | 2. Their themes | Add or remove a company in a theme, rename a theme, a new theme, a different news query | `my/themes.yaml`. It is merged on top of the shipped map: it can add themes, add members, `remove:` members and replace `label`, `description`, `proxy`, `notes`, `news_query` (SPEC 6.4). | Low. Never edit `themes/themes.yaml` for one person's taste. |
-| 3. Shipped settings | Another news feed, a fund to look through | `sources/feeds.yaml`, `sources/funds.yaml` | Medium. Do it on a branch. |
+| 2. Their bet figures | A newer figure for the bet page, their own amber and red levels, their slider defaults, which views a crash path counts for | `my/bet.yaml`, through `/bet`. It is merged on top of the shipped ledger (SPEC 3.6). | Low. Run `uv run whatstocks check`, then `uv run whatstocks bet`. Never edit `sources/bet/` for one person's taste. |
+| 3. Shipped settings | Another news feed, a fund to look through, a figure or threshold for everyone | `sources/feeds.yaml`, `sources/funds.yaml`, `sources/bet/*.yaml` | Medium. Do it on a branch. |
 | 4. The page | Reorder or hide cards, a new card or chart, colours, wording | `web/`, then `npm run build` | Medium. Do it on a branch, follow `web/CLAUDE.md`, check it in a browser. |
 | 5. The logic | A new figure, a new page, a new command, a change to a calculation | `src/whatstocks/`, `tests/`, maybe `web/` | Higher. Do it on a branch, add a test, run everything. |
 
@@ -44,6 +46,9 @@ and then level 4: Python computes it and the page only shows it (the page never 
   earlier one. Views are never deleted: one that cannot be resolved gets `result: void`. In `decisions.yaml`, add
   entries and never rewrite old ones. The score only means something if the history is honest.
 - **The user sets every probability.** Never suggest a number, a range or a base rate, even if asked.
+- **Every bet figure has a source.** In `my/bet.yaml`, each figure carries its source link and the date it was
+  read. Never write a figure without one, and never raise a grade without a better source. Show each figure,
+  with the one it replaces, and write it only on a yes.
 
 ### Git
 
@@ -71,7 +76,9 @@ nearest thing that keeps it.
   image, analytics or API call in `web/`. New data reaches the page through Python and the view model.
 - **Every fact has a source.** The brief links to a source the code fetched itself. Do not let the AI state facts
   without one.
-- **Code computes, the AI writes words.** Numbers come from Python, never from the model or the page.
+- **Code computes, the AI writes words.** Numbers come from Python, never from the model or the page. The bet page
+  has two narrow exceptions (SPEC section 2): it adds the pieces you switch on, and runs the cash clock. Never
+  widen them.
 - **News queries stay about the theme.** A `news_query` is sent to Google News as it is: never put a holding, a
   view or an amount in it.
 
@@ -81,6 +88,7 @@ Run these before you say a change is done, and tell the user what passed and wha
 
 ```text
 uv run whatstocks check                         # after any change in my/
+uv run whatstocks bet                           # after a change to my/bet.yaml: works the bet page out again
 uv run pytest                                   # after any change outside my/
 cd web && npm run build && npm test             # after any change in web/ (commit the rebuilt dashboard.html)
 uv run whatstocks --dir demo prepare            # then: uv run whatstocks --dir demo finish --no-brief
@@ -98,7 +106,8 @@ the rule it guards should change.
 1. **Say back what you understood**, and which level from section 2 it is, in one or two plain sentences.
 2. **Say what you will change** (which files) and how they can undo it.
 3. **Make one change at a time.** Show it, run the checks, then move to the next.
-4. **End by telling them how to see it** (`/morning`, or open the page) **and how to undo it**:
+4. **End by telling them how to see it** (`/morning`, `uv run whatstocks bet` for the bet page, or open the page)
+   **and how to undo it**:
    - their data: copy the file back from `my/backups/<date>/`;
    - a branch: `git switch main` (the branch stays until they delete it);
    - one file on a branch, not yet committed: `git restore <file>`.

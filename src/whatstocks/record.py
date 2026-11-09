@@ -42,11 +42,17 @@ def scores(views: list[View]) -> dict:
     }
 
 
+def is_signal(entry: dict) -> bool:
+    """A line the bet's signals logged (a path or the regime changed), not a news event. It counts as evidence for
+    views, but not toward how busy the news was."""
+    return entry.get("source") == "signal"
+
+
 def busy_days(evidence: list[dict]) -> dict[str, Counter]:
-    """Events per theme per day, from the evidence log."""
+    """News events per theme per day, from the evidence log."""
     busy = defaultdict(Counter)
     for e in evidence:
-        for tid in e.get("themes", []):
+        for tid in ([] if is_signal(e) else e.get("themes", [])):
             busy[e["date"]][tid] += 1
     return busy
 

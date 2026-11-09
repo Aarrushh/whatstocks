@@ -92,8 +92,9 @@ def test_every_theme_that_matters_gets_a_line(payload):
     ]
     brief["themes"] = theme_notes() + [dict(theme_notes()[0], state="")]
     errors = validate_brief(brief, payload)[0]
-    assert "theme 11: theme 'ai_buildout' appears twice" in errors
-    assert "theme 11: 'state' is missing" in errors
+    extra = len(brief["themes"])  # the duplicate is the last line
+    assert f"theme {extra}: theme 'ai_buildout' appears twice" in errors
+    assert f"theme {extra}: 'state' is missing" in errors
 
 
 def test_ripples_holdings_and_watch_are_checked(payload):
