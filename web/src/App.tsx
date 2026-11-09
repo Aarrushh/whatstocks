@@ -1,6 +1,7 @@
-/** The dashboard: a sidebar, seven pages, the command palette and the keys. Everything it shows comes from the view
+/** The dashboard: a sidebar, eight pages, the command palette and the keys. Everything it shows comes from the view
  * model Python embedded in the page (src/whatstocks/render.py); nothing is fetched and nothing is computed that
- * Python did not already decide. */
+ * Python did not already decide. The one exception is "Will the bet pay off?", which adds up the pieces you switch
+ * on (lib/bet.ts). */
 import { useCallback, useEffect, useMemo, useState, type ComponentType } from "react"
 import { MotionConfig, motion } from "motion/react"
 import { TooltipProvider } from "@/components/ui/tooltip"
@@ -11,6 +12,7 @@ import { TipLayer } from "@/components/tip"
 import { longDate } from "@/lib/format"
 import { PAGES, useKeys, useRoute, useTheme, type PageId } from "@/lib/hooks"
 import type { Model } from "@/lib/types"
+import { BetPage } from "@/pages/bet"
 import { Exposure } from "@/pages/exposure"
 import { Holdings } from "@/pages/holdings"
 import { Overview } from "@/pages/overview"
@@ -27,6 +29,7 @@ const PAGE: Record<PageId, ComponentType<PageProps>> = {
   scenarios: Scenarios,
   views: Views,
   record: RecordPage,
+  bet: BetPage,
 }
 
 export function App({ model }: { model: Model }) {

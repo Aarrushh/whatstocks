@@ -1,0 +1,346 @@
+# The crash paths, their indicators and thresholds, the regime, and where each path reaches a portfolio
+# (spec sections 9 and 10). Drafted with their reasons and approved on 2026-11-07.
+#
+# Each indicator is clear, amber or red. direction: up means higher readings are worse (amber from the amber level
+# up); down means lower readings are worse. A trigger indicator can turn its path red; the others can only turn it
+# amber. Every level has its reason (why). Percentages are written as percentages: 15 means 15%.
+#
+# Yours go in my/bet.yaml: indicators: (amber, red and your why, by id), channels: (a path's whole list).
+
+paths:
+  capex_retrenchment:
+    label: Capex retrenchment
+    kind: crash
+    about: The big spenders cut what they build.
+  equity_drawdown:
+    label: Equity drawdown
+    kind: crash
+    about: AI stocks fall 30% or more.
+  credit_event:
+    label: Credit event
+    kind: crash
+    about: A lab, a neocloud or a data-centre borrower cannot pay or refinance. Oracle and CoreWeave are the canaries.
+    red_when_all_red: [cds_orcl, cds_crwv]
+  price_collapse:
+    label: Price collapse
+    kind: crash
+    about: What AI compute and AI answers sell for falls faster than their use grows, as bandwidth did in 2001.
+  adoption_pace:
+    label: Adoption pace
+    kind: adoption
+    about: Whether end users pay fast enough to earn back the build-out before it is written off.
+
+# Read in order: the first that holds is the regime.
+regime:
+  - {state: breaking, label: Breaking, crash: red, about: "Any crash path is red: one of the four crashes has started."}
+  - {state: straining, label: Straining, crash: amber, adoption: red, about: "Any crash path is amber, or adoption pace is red."}
+  - {state: absorbing, label: Absorbing, about: "No crash path is amber or red, and adoption pace is not red."}
+
+indicators:
+  # ---- capex retrenchment
+  guidance_cuts:
+    label: Capex guidance cuts, last two quarters
+    path: capex_retrenchment
+    trigger: true
+    rule: guidance_cuts
+    series: capex_guide
+    entities: [msft, googl, amzn, meta, orcl]
+    quarters: 2
+    counts: [demand, unstated]
+    unit: companies
+    direction: up
+    amber: 1
+    red: 2
+    why: >-
+      One cut can be one company's story; two is a pattern. It is the same "two of the big spenders" bar as the
+      example view ai-capex-cut-2027. Each guidance point records why it changed, and accounting and supply changes
+      never count.
+  capex_growth:
+    label: Capex growth, last four quarters against the four before
+    path: capex_retrenchment
+    trigger: true
+    rule: capex_growth
+    groups: [hyperscalers, oracle, neoclouds]
+    unit: pct
+    direction: down
+    amber: 15
+    red: 0
+    why: US telecom capex fell 32% from 2000 to 2003 after years of growth. Growth under 15% means the peak is near; a fall is retrenchment itself.
+  capex_to_ocf:
+    label: Capex over operating cash flow, last four quarters
+    path: capex_retrenchment
+    rule: capex_to_ocf
+    entities: [msft, googl, amzn, meta, orcl]
+    unit: pct
+    direction: up
+    amber: 100
+    red: 130
+    why: "Above 100% the build-out runs on debt or cash piles, as utilities do. 130% is a judgment: a third more than cash flow lasts only while credit stays open."
+  nvda_guide:
+    label: Nvidia guidance below its last quarter's revenue
+    path: capex_retrenchment
+    rule: guide_vs_actual
+    series: nvda_revenue_guide
+    actual: nvda_revenue
+    entity: nvda
+    unit: quarters in a row
+    direction: up
+    amber: 1
+    red: 2
+    why: The supplier sees orders first. Amber when the next-quarter guide is below the last quarter's revenue; red when that happens two quarters in a row.
+  tsmc_yoy:
+    label: TSMC monthly revenue, year on year, three-month average
+    path: capex_retrenchment
+    rule: mean_last
+    series: tsmc_revenue_yoy
+    entity: tsmc
+    points: 3
+    unit: pct
+    direction: down
+    amber: 10
+    red: 0
+    why: The same reason as Nvidia's guidance, one step further up the chain.
+  dc_construction:
+    label: US data-centre construction, three-month change
+    path: capex_retrenchment
+    rule: change
+    series: dc_construction
+    entity: us
+    points: 3
+    unit: pct
+    direction: down
+    amber: 0
+    red: -10
+    why: "The physical pipeline: a fall means projects are paused."
+
+  # ---- equity drawdown
+  ai_basket:
+    label: AI basket below its 52-week high
+    path: equity_drawdown
+    trigger: true
+    rule: below_high
+    basket: ai_buildout:core
+    weeks: 52
+    unit: pct
+    direction: down
+    amber: -15
+    red: -30
+    why: The AI build-out's core members, equal weight. A fall of 30% is the crash as you defined it; 15% is half-way.
+  hyperscaler_basket:
+    label: Hyperscaler basket below its 52-week high
+    path: equity_drawdown
+    rule: below_high
+    basket: hyperscalers
+    weeks: 52
+    unit: pct
+    direction: down
+    amber: -10
+    red: -20
+    why: Microsoft, Alphabet, Amazon and Meta, equal weight. Bigger, steadier companies, so lower bars; 20% is the usual bear-market line.
+
+  # ---- credit event
+  hy_spread:
+    label: US high-yield spread
+    path: credit_event
+    trigger: true
+    rule: level
+    series: hy_spread
+    entity: us
+    unit: pct
+    direction: up
+    amber: 4.5
+    red: 6
+    why: 4.5% is about the April 2025 tariff-shock peak (4.61%), the widest in the three years FRED holds. 6% is a level last seen in the 2022 sell-off.
+  credit_events:
+    label: Defaults and failed refinancings
+    path: credit_event
+    trigger: true
+    rule: events
+    series: credit_events
+    days: 365
+    amber_kinds: [distressed_exchange, pulled_deal]
+    red_kinds: [missed_payment, bankruptcy]
+    why: A missed payment or a bankruptcy filing by a lab, a neocloud or a data-centre borrower is the credit event itself. A distressed exchange or a pulled bond deal is the step before.
+  ratings:
+    label: Ratings of AI borrowers
+    path: credit_event
+    trigger: true
+    rule: ratings
+    series: credit_rating
+    floor: BBB-
+    why: Amber when one borrower sits at the lowest investment grade (BBB- or Baa3) or on negative outlook; red when one is cut to high yield, which forces some holders to sell and raises the cost of refinancing.
+  cds_orcl:
+    label: Oracle 5-year CDS
+    path: credit_event
+    rule: level
+    series: cds_5y
+    entity: orcl
+    max_age_days: 30
+    unit: bp
+    direction: up
+    amber: 200
+    red: 400
+    why: Before 2026 Oracle's CDS had never been above 200bp (198bp in April 2026 was then a record). 400bp is high-yield territory.
+  cds_crwv:
+    label: CoreWeave 5-year CDS
+    path: credit_event
+    rule: level
+    series: cds_5y
+    entity: crwv
+    max_age_days: 30
+    stand_in: {series: bond_yield, entity: crwv, unit: pct, amber: 12, red: 15}
+    unit: bp
+    direction: up
+    amber: 700
+    red: 1000
+    why: 1,000bp is the usual line for distressed debt. With no CDS print in 30 days, the yield on its 2032 notes stands in (12% and 15%).
+
+  # ---- price collapse
+  h100_rent:
+    label: H100 rental index, year on year
+    path: price_collapse
+    trigger: true
+    rule: yoy
+    series: gpu_rent
+    entity: h100
+    tolerance_days: 45
+    unit: pct
+    direction: down
+    amber: -30
+    red: -50
+    why: Halving in a year would be a glut, like the slide in H100 rents in 2024-25. B200 takes over once it has a year of history.
+  telecom_test:
+    label: "Telecom test: realized revenue per token, year on year"
+    path: price_collapse
+    trigger: true
+    rule: telecom_test
+    unit: pct
+    amber: -50
+    why: >-
+      Bandwidth prices fell 92.5% from 1998 to 2004 while traffic about doubled each year, and revenue fell once price
+      outran volume. Amber when revenue per token falls more than 50% in a year; red when it falls faster than tokens
+      grow, so demand shrinks while usage grows.
+  dram:
+    label: DRAM contract prices, quarter on quarter
+    path: price_collapse
+    rule: level
+    series: dram_contract_qoq
+    entity: conventional
+    unit: pct
+    direction: down
+    amber: -10
+    red: -25
+    why: The memory gluts of 2019 and 2023 showed up here first.
+
+  # ---- adoption pace
+  coverage_now:
+    label: Coverage now
+    path: adoption_pace
+    trigger: true
+    rule: coverage_now
+    unit: pct
+    why: >-
+      Amber when the AI revenue that reaches the build-out (actual demand times the compute share) is below the full
+      need; red when it is below depreciation alone. A utility that cannot cover depreciation is eating its capital;
+      one that covers depreciation but not the return pays its owners less than their cost of capital.
+  payback:
+    label: Payback by the deadline
+    path: adoption_pace
+    trigger: true
+    rule: payback
+    unit: pct
+    direction: down
+    amber: 100
+    red: 70
+    why: 100% is break-even at the cost of capital. Below 70%, about a third of the bet goes unearned when the fleet is written off.
+  adoption_stall:
+    label: St. Louis Fed adoption, quarter on quarter (all adults, and at work)
+    path: adoption_pace
+    rule: streak
+    series: genai_adoption
+    entities: [all, work]
+    unit: quarters in a row
+    direction: up
+    amber: 1
+    red: 2
+    why: An S-curve at 60% should still be rising. One survey can be noise; two quarters at zero or below is a stall.
+  ramp:
+    label: Ramp AI Index
+    path: adoption_pace
+    rule: trend
+    series: ramp_ai_index
+    entity: us
+    months: 3
+    flat: 0.5
+    unit: points
+    why: The share of businesses paying is the cleanest monthly series on monetization. Amber when it is flat (within 0.5 points) for three months; red when it falls for three months.
+  conversion:
+    label: Conversion, ChatGPT paying users over weekly users
+    path: adoption_pace
+    rule: falls
+    paying: {series: paying_users, entity: chatgpt}
+    users: {series: ai_users, entity: chatgpt}
+    unit: readings in a row
+    direction: up
+    amber: 2
+    why: A quality signal, not a crash trigger, so it never turns red. Amber when it falls in two readings in a row.
+  tier1_share:
+    label: Tier 1's share of net demand
+    path: adoption_pace
+    rule: tier1_share
+    unit: pct
+    direction: down
+    amber: 60
+    red: 40
+    why: When most demand is bundled, venture-funded or investor-funded, it can vanish with the funding.
+
+# Where each path reaches a portfolio, as in a conflict scan (SPEC 3.5). A theme id with :core counts only its
+# core members.
+channels:
+  capex_retrenchment:
+    - {kind: theme, id: "ai_buildout:core", effect: hurt, strength: high}
+    - {kind: theme, id: ai_lessors, effect: hurt, strength: high}
+    - {kind: theme, id: power_grid, effect: hurt, strength: medium}
+    - {kind: theme, id: nuclear_uranium, effect: hurt, strength: low}
+    - {kind: theme, id: hyperscalers, effect: mixed, strength: medium, why: "Cash flow rises, but the growth story falls."}
+  equity_drawdown:
+    - {kind: theme, id: "ai_buildout:core", effect: hurt, strength: high}
+    - {kind: theme, id: ai_lessors, effect: hurt, strength: high}
+    - {kind: theme, id: hyperscalers, effect: hurt, strength: medium}
+  credit_event:
+    - {kind: theme, id: ai_lessors, effect: hurt, strength: high}
+    - {kind: theme, id: hyperscalers, effect: hurt, strength: low}
+  price_collapse:
+    - {kind: theme, id: ai_lessors, effect: hurt, strength: high}
+    - {kind: theme, id: "ai_buildout:core", effect: hurt, strength: medium}
+
+# Past episodes replayed on today's portfolio and on the world index (exposure.replay).
+replays:
+  - {id: q4_2018, label: Q4 2018 chip sell-off, start: 2018-10-01, end: 2018-12-24, paths: [capex_retrenchment]}
+  - {id: covid, label: Covid crash, start: 2020-02-19, end: 2020-03-23, paths: [credit_event]}
+  - {id: rate_shock_2022, label: 2022 rate shock, start: 2021-11-19, end: 2022-10-13, paths: [equity_drawdown, credit_event]}
+  - {id: deepseek, label: DeepSeek shock, start: 2025-01-24, end: 2025-01-27, paths: [price_collapse]}
+  - {id: oct_2026, label: Oct 2026 AI sell-off, start: 2026-10-06, end: 2026-10-23, paths: [equity_drawdown]}
+
+# The four pillars (spec 8), a panel each on the page. Indicators show their state; each series shows its latest
+# figure for every company; derived rows (free cash flow, depreciation's share of cash flow) are worked out in Python
+# from two series, at the latest quarter both have. Every indicator sits in one pillar.
+pillars:
+  - id: capex_revenue
+    label: Capex against end-user revenue
+    indicators: [capex_to_ocf, coverage_now, payback, capex_growth, guidance_cuts, nvda_guide]
+    derived: [free_cash_flow, depreciation_share]
+    series: [backlog, backlog_lab_share]
+  - id: unit_economics
+    label: Unit economics and inference degradation
+    indicators: [telecom_test, h100_rent, dram]
+    series: [price_decline, tokens_per_request, gpu_rent, server_life, lab_compute_share, lab_gross_margin, lab_cash_burn]
+  - id: expansion
+    label: Net expansion and discretionary budgets
+    indicators: [ramp, conversion, tier1_share, adoption_stall]
+    series: [nrr, budget_source_share, innovation_budget_share, enterprise_ai_spend]
+  - id: proxies
+    label: High-frequency proxies
+    indicators: [ai_basket, hyperscaler_basket, hy_spread, cds_orcl, cds_crwv, ratings, credit_events, tsmc_yoy,
+                 dc_construction]
+    series: [tokens_weekly, openrouter_token_share]

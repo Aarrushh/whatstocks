@@ -41,6 +41,7 @@ def write_json(path: Path, data) -> None:
 class Settings:
     home_currency: str
     benchmark: str
+    sec_contact: str = ""  # a name and email for the SEC's EDGAR (it asks every client for one); EDGAR is off without it
 
 
 @dataclass
@@ -200,7 +201,11 @@ def load_settings(path: Path, problems: list[str]) -> Settings:
     benchmark = str(data.get("benchmark") or "")
     if not benchmark:
         problems.append(f"{path.name}: benchmark is missing")
-    return Settings(home, benchmark)
+    contact = _clean(data.get("sec_contact"))
+    if contact and not re.search(r"[^@\s]+@[^@\s]+\.[^@\s]+", contact):
+        problems.append(f"{path.name}: sec_contact needs an email address, such as 'Jane Doe jane@example.com' "
+                        f"(the SEC asks for a name and email)")
+    return Settings(home, benchmark, contact)
 
 
 def load_holdings(path: Path, problems: list[str], funds: set[str]) -> list[Holding]:

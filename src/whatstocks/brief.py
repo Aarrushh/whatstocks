@@ -12,6 +12,7 @@ RIPPLE_EFFECTS = ("help", "hurt", "unclear")
 MUST_COVER_SHARE = 0.02  # a theme this big in the portfolio always gets a line in the brief
 INSIDE_SHARE = 0.02  # themes under this share of a holding are left off that holding
 MAX_EVENTS, MAX_RIPPLES, MAX_WATCH = 10, 8, 8
+MAX_BET_LINE = 400  # characters: the bet line is one or two sentences
 MONEY_KEYS = {"quantity", "value", "amount", "total", "price", "cost"}
 URL = re.compile(r"https?://|www\.", re.I)
 ADVICE = [re.compile(p, re.I) for p in (
@@ -232,8 +233,27 @@ def validate_brief(brief, payload: dict) -> tuple[list[str], list[str]]:
         check.known(where, w.get("themes") or [], w.get("holdings") or [])
         check.cites(where, w)
 
+    _check_bet(check, brief, payload)
     links, advice = text_checks(brief)
     return check.errors + links, advice
+
+
+def _check_bet(check: _Check, brief: dict, payload: dict) -> None:
+    """The line on "Will the bet pay off?" (spec 16): required when the regime or a path changed since the last
+    logged state, optional otherwise. Its news ids must be today's."""
+    bet = brief.get("bet")
+    if bet is None:
+        if (payload.get("bet") or {}).get("changed"):
+            check.errors.append("bet: the regime or a crash path changed since the last brief: add bet.line, one or "
+                                "two sentences on what moved, with the news_ids that explain it (if any)")
+        return
+    if not isinstance(bet, dict):
+        check.errors.append("bet must be an object: {\"line\": \"...\", \"news_ids\": [...]}")
+        return
+    check.text("bet", bet, "line")
+    if len(str(bet.get("line") or "")) > MAX_BET_LINE:
+        check.errors.append(f"bet: the line is longer than {MAX_BET_LINE} characters: one or two sentences")
+    check.cites("bet", bet, required=False)
 
 
 def text_checks(node) -> tuple[list[str], list[str]]:

@@ -13,6 +13,7 @@ import pytest
 
 from whatstocks import funds as funds_module
 from whatstocks import market, morning
+from whatstocks.bet import fetch as bet_fetch
 from whatstocks.paths import ROOT, UserDir
 
 TODAY = dt.date(2026, 11, 3)
@@ -80,8 +81,23 @@ def fake_rates(currencies) -> pd.DataFrame:
     return pd.DataFrame({c: base[c] for c in currencies}, index=DAYS)
 
 
+def fred_csv(series_id: str) -> str:
+    """FRED's CSV layout. The adoption surveys are quarterly, each dated by its first day (2024Q3 44, rising 2 a
+    quarter to 2026Q3 60; at work 20 lower); the spreads are daily, with '.' on a day that has no value."""
+    lines = [f"observation_date,{series_id}"]
+    if series_id.startswith("RPS"):
+        base = 44.0 if series_id.endswith("ALL") else 24.0
+        lines += [f"{day.date()},{base + 2 * i:.3f}" for i, day in enumerate(pd.date_range("2024-07-01", "2026-07-01",
+                                                                                            freq="QS"))]
+    else:
+        level = 3.0 if series_id == "BAMLH0A0HYM2" else 0.9
+        lines += [f"{day.date()},{'.' if i == 5 else f'{level + 0.01 * (i % 7):.2f}'}"
+                  for i, day in enumerate(pd.bdate_range("2026-08-03", TODAY))]
+    return "\n".join(lines) + "\n"
+
+
 THEME_IDS = ("ai_buildout", "defence", "oil_gas", "power_grid", "gold", "india", "china", "critical_minerals",
-             "nuclear_uranium", "shipping_routes")
+             "nuclear_uranium", "shipping_routes", "hyperscalers", "ai_lessors")
 THEME_NEWS = {
     "oil_gas": ("OPEC+ kept supply tight into 2027.", "Shell sits in this theme, and so does a slice of the world index.",
                 ["aaaaaaaaaa"]),
@@ -151,9 +167,14 @@ def user(tmp_path) -> UserDir:
 
 @pytest.fixture
 def fake_world(monkeypatch):
-    """Prices, FX, fund holdings and news, all synthetic."""
+    """Prices, FX, fund holdings, news and the bet's figures, all synthetic. The demo has no sec_contact, so nothing
+    asks EDGAR; a test that sets one replaces edgar_json itself."""
     monkeypatch.setattr(market, "yahoo_closes", lambda symbols: {s: price_series(s) for s in symbols})
     monkeypatch.setattr(market, "yahoo_currency", currency_of)
     monkeypatch.setattr(market, "ecb_rates", fake_rates)
     monkeypatch.setattr(funds_module, "download", lambda url: ishares_csv(ACWI_ROWS))
     monkeypatch.setattr(morning, "fetch_news", lambda themes, now: ([dict(n) for n in NEWS], []))
+    monkeypatch.setattr(bet_fetch, "fred_csv", fred_csv)
+    monkeypatch.setattr(bet_fetch, "yahoo_shares", lambda symbol: 2.5e9)
+    monkeypatch.setattr(bet_fetch, "edgar_json", lambda cik, concept, contact: None)
+    monkeypatch.setattr(bet_fetch, "EDGAR_PAUSE", 0)

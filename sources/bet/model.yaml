@@ -1,0 +1,292 @@
+# Model A (the money invested) and Model B (adoption): slider steps, parameters, and the pieces each switch turns
+# on or off (spec sections 4, 5 and 7). Python computes every step of every piece; the page only picks and stacks.
+#
+# A parameter is one of:
+#   - a figure with its source: value, grade, source, seen (and published, note);
+#   - a pointer to a ledger figure: from: {series, entity, period};
+#   - a judgment: value and basis: judgment, with its reason (why). The page labels judgments "assumption".
+# Percentages are written as percentages: 58 means 58%.
+#
+# Yours go in my/bet.yaml, replaced by id: parameters: (a whole parameter, or one company of ai_share) and
+# sliders: (only the default).
+
+sliders:
+  gpu_life:
+    label: GPU useful life
+    unit: years
+    steps: [3, 4, 5, 6, 7]
+    default: 5
+    why: Companies state five to six years for their servers (server_life). Five puts the deadline band at 2029-31.
+  cost_of_capital:
+    label: Cost of capital
+    unit: pct
+    steps: [6, 8, 10, 12]
+    default: 8
+    why: A blended cost of debt and equity for the companies that build. 6% is generous and 12% is strict.
+  deflation:
+    label: Price deflation
+    unit: pct_per_year
+    steps: [trailing, -20, -40, -60, -80]
+    default: trailing
+    why: >-
+      Trailing is the realized rate: last year's demand growth over last year's token growth. Price at constant
+      capability falls much faster, but buyers move up to better models, so the realized fall is what reaches revenue.
+  value_capture:
+    label: Value capture
+    unit: pct
+    steps: [2.2, 5, 10, 20]
+    default: 2.2
+    from: {series: innovator_capture, entity: nordhaus, period: 2001-12-31}
+    why: Nordhaus (2004) found that innovators keep about 2.2% of the value their innovations create.
+  labour_share:
+    label: Budget split, labour share
+    unit: pct
+    steps: [0, 25, 50, 75, 100]
+    default: 50
+    why: Half-way between AI paid for out of IT budgets (0) and out of labour budgets (100).
+
+parameters:
+  compute_share:
+    label: Compute share of each end-user AI dollar
+    unit: pct
+    from: {series: lab_compute_share, entity: anthropic, period: 2026Q3}
+    why: >-
+      The part of each end-user AI dollar that reaches the infrastructure. It turns the build-out's need into the
+      end users' bill. Anthropic's earlier quarters ran above 100% while it built up.
+  short_lived_share:
+    label: Share of capex on short-lived assets, where a company does not state it
+    unit: pct
+    value: 60
+    low: 50
+    high: 75
+    basis: judgment
+    why: Microsoft, the one company that states it, put 50% to 75% into servers, GPUs and network gear each quarter since 2025Q3 (capex_short_lived).
+  long_life:
+    label: Life of long-lived capex (buildings and power)
+    unit: years
+    from: {series: building_life, entity: msft, period: 2026-07-01}
+    why: Buildings and power last far longer than chips. Microsoft moved its data centres to 25 years in July 2026.
+  running_costs:
+    label: Running costs a year, as a share of gross capital
+    unit: pct
+    value: 3
+    low: 2
+    high: 5
+    basis: judgment
+    why: Power, staff and repairs, as a share of what the sites cost to build. Power is most of it. My estimate, to source.
+  exit_multiple:
+    label: Exit multiple, times earnings
+    unit: times
+    value: 20
+    low: 15
+    high: 25
+    basis: judgment
+    why: What the market would pay for a year of AI profits once growth slows. Large, steady companies trade at about 15 to 25 times earnings.
+  stack_profit_share:
+    label: Stack profit share of each end-user dollar
+    unit: pct
+    value: 35
+    low: 25
+    high: 45
+    basis: judgment
+    why: The share of each end-user AI dollar that ends up as profit somewhere in the stack (labs, clouds, chips). Chip margins are far higher today; a mature stack earns less.
+  usage_half_life:
+    label: Half-life of token growth
+    unit: months
+    value: 18
+    basis: judgment
+    why: How fast usage growth slows in the projection. The trailing growth rate halves every 18 months.
+  usage_floor:
+    label: Long-run usage growth
+    unit: pct_per_year
+    value: 25
+    basis: judgment
+    why: The growth rate that token growth slows towards and stays at.
+  hour_uplift:
+    label: Uplift of an AI-assisted hour
+    unit: pct
+    value: 25
+    low: 15
+    high: 40
+    basis: judgment
+    why: How much more an hour of work produces with AI, for the work-hours unit. My estimate for tasks AI suits, to source.
+  free_user_share:
+    label: Share of OpenAI's inference that serves free users
+    unit: pct
+    value: 33
+    grade: press
+    source: "https://finance.biggo.com/news/mRiPlZwBTwP6zY3HRxp-"
+    published: 2026-02-25
+    seen: 2026-11-07
+    note: OpenAI expects about two-thirds of its 2026 inference cost to serve paying users (The Information, via BigGo Finance). In 2025 the split was about $3.9B free and $4.5B paying.
+  marketplace_cut:
+    label: Cloud partners' cut of Anthropic's reported revenue
+    unit: pct
+    value: 10
+    low: 5
+    high: 20
+    basis: judgment
+    why: Anthropic counts sales through cloud marketplaces gross. The partner's cut sets tier 1's low end (net). My estimate.
+  vc_funded_share:
+    label: Share of lab revenue paid with venture money
+    unit: pct
+    value: 10
+    low: 5
+    high: 20
+    basis: judgment
+    why: Carved out of tier 1 into tier 4. Start-ups that resell models often spend more on them than they earn. My estimate, to source.
+  ad_lift_share:
+    label: Share of ad revenue credited to AI
+    unit: pct
+    value: 5
+    low: 2
+    high: 10
+    basis: judgment
+    why: For tier 3. Meta credits its AI ranking and retrieval with conversion lifts of 1.4% to 9.6% in 2026Q3 (ad_conversion_lift), and advertisers pay for only part of a lift. My estimate.
+  ai_share:
+    label: AI share of capex
+    unit: pct
+    basis: judgment
+    by_entity:
+      msft: {value: 85, low: 70, high: 95, why: "Almost all of Microsoft's capex is data centres; part of it serves its non-AI cloud."}
+      googl: {value: 85, low: 70, high: 95, why: "Mostly data centres and AI chips; part serves Search, YouTube and the non-AI cloud."}
+      amzn: {value: 70, low: 55, high: 85, why: "Amazon's capex also builds warehouses and logistics."}
+      meta: {value: 90, low: 80, high: 100, why: "Meta's capex is mostly AI compute for ranking, ads and its models."}
+      orcl: {value: 100, why: "Oracle's capex growth is its AI cloud build-out."}
+      crwv: {value: 100, why: "A neocloud's capex is the AI build-out."}
+      nbis: {value: 100, why: "A neocloud's capex is the AI build-out."}
+      openai: {value: 100, why: "A lab's own build is AI by definition."}
+      xai: {value: 100, why: "A lab's own build is AI by definition."}
+
+# Model A: the capex placed, and what it must earn each year (spec 4.1).
+capex:
+  basis:  # where each company's capex is read from: the basis it states and guides on
+    msft: capex_stated
+    googl: capex_cash
+    amzn: capex_stated
+    meta: capex_stated
+    orcl: capex_cash
+    crwv: capex_cash
+    nbis: capex_cash
+    openai: lab_capex
+    xai: lab_capex
+  guidance: capex_guide
+  short_lived: capex_short_lived
+  parameters: [ai_share, short_lived_share, long_life]
+  groups:
+    hyperscalers: {label: Hyperscalers, enabled: true, members: [msft, googl, amzn, meta], about: "Cash capex, with finance leases where the company states them."}
+    oracle: {label: Oracle, enabled: true, members: [orcl]}
+    neoclouds: {label: Neoclouds, enabled: true, members: [crwv, nbis]}
+    labs: {label: "Labs' own builds", enabled: true, members: [openai, xai], about: "OpenAI's share of Stargate (to source) and xAI."}
+    consensus: {label: 2027 consensus, enabled: false, series: capex_consensus, for: "2027", about: "Analysts' 2027 capex, beyond what is guided. Off by default: the curve shows what the bet already placed needs."}
+  costs:
+    depreciation: {label: Depreciation, enabled: true}
+    return: {label: Return on capital, enabled: true}
+    running: {label: Running costs, enabled: true, parameters: [running_costs]}
+
+# Model A: what today's market values assume end users will pay by the deadline (spec 4.2).
+valuation:
+  start: 2022-11-30  # ChatGPT's launch
+  world: ACWI
+  parameters: [exit_multiple, stack_profit_share]
+  groups:
+    chips: {label: Chips, enabled: true, members: [nvda, avgo, tsmc, amd, asml, mu]}
+    hyperscalers: {label: Hyperscalers, enabled: true, members: [msft, googl, amzn, meta]}
+    oracle_neoclouds: {label: Oracle and neoclouds, enabled: true, members: [orcl, crwv, nbis]}
+    labs: {label: Labs, enabled: true, members: [openai, anthropic, xai], series: lab_valuation}
+
+# Model B: what end users actually pay, in tiers by quality, net (spec 5.2 and 5.3).
+demand:
+  labs: [openai, anthropic]  # app makers (Cursor, Perplexity) pay the labs, so they are inside lab revenue
+  left_out:  # labs whose revenue is not counted, each with its reason
+    xai: >-
+      xAI's revenue is now mostly compute it rents to other labs (Anthropic among them) and X's advertising, with no
+      split between them (lab_revenue notes). Counting it would count those labs' end users a second time.
+  marketplace_gross: [anthropic]  # labs that report sales through cloud marketplaces gross (marketplace_cut)
+  tiers:
+    direct:
+      label: Direct
+      tier: 1
+      enabled: true
+      about: People and firms paying for AI from their own budgets. Marketplace resales count once, at the lab.
+      series: [lab_revenue, lab_revenue_annual, lab_runrate, paying_users]
+      parameters: [marketplace_cut]
+    bundled:
+      label: Bundled
+      tier: 2
+      enabled: true
+      about: AI-led price rises on existing products, times the seats they apply to. Never the whole suite.
+      series: [seat_base]
+    ad_lift:
+      label: Ad lift
+      tier: 3
+      enabled: true
+      about: Ad revenue that Meta and Google credit to AI ranking and targeting.
+      series: [ad_revenue, ad_conversion_lift]
+      parameters: [ad_lift_share]
+    vc_funded:
+      label: VC-funded
+      tier: 4
+      enabled: true
+      about: AI start-ups paying for models with venture money, carved out of tier 1.
+      parameters: [vc_funded_share]
+    investor_compute:
+      label: Investor-funded compute
+      tier: 5
+      enabled: true
+      about: Labs' compute bills beyond what their revenue covers, at their end-user equivalent.
+      series: [lab_compute, lab_inference_cost, lab_revenue]
+      parameters: [compute_share]
+  free_users:
+    label: Count investor-funded free users as demand
+    enabled: false
+    about: Free users pay nothing; what serves them is a cost until they convert. This puts it back, to show its size.
+    series: [lab_inference_cost]
+    parameters: [free_user_share]
+  usage:
+    series: tokens_monthly
+    entity: googl
+    check: {series: tokens_weekly, entity: openrouter}
+    parameters: [usage_half_life, usage_floor]
+
+# The units toggle (spec 6).
+units:
+  usd: {label: "$B a year of end-user demand"}
+  seats: {label: Paying-seat equivalents, about: "The same curves divided by revenue per paying seat."}
+  hours: {label: Share of work hours that must use AI, parameters: [hour_uplift]}
+
+# The budget pool: IT spend x (1 - w) + labour pay x w, where w is the labour-share slider (spec 6).
+pool:
+  it_spending: {series: it_spending, entity: world}
+  gdp: {series: world_gdp, entity: world}
+  labour_share: {series: labour_share, entity: world}
+
+# The funnel (spec 5.1): how many people use AI, how much, and who pays. The dollars are the demand tiers above. Each
+# measure is a ledger series; the page shows its latest figure and the one before. A leakage ratio divides two
+# measures of the same people, in Python. Businesses paying ÷ businesses using is left out: the Ramp AI Index counts
+# Ramp's customers and the Census survey counts all US firms, so a ratio of the two would mean nothing.
+funnel:
+  layers:
+    - id: breadth
+      label: Breadth
+      measures:
+        - {series: genai_adoption, entity: all, label: US adults using generative AI}
+        - {series: ai_users, entity: world, label: People using AI worldwide}
+        - {series: ai_users, entity: chatgpt, label: ChatGPT weekly users}
+    - id: intensity
+      label: Intensity
+      measures:
+        - {series: genai_adoption, entity: work, label: US workers using it at work}
+        - {series: tokens_monthly, entity: googl, label: "Tokens a month, Google's products"}
+        - {series: tokens_weekly, entity: openrouter, label: Tokens a week on OpenRouter}
+    - id: monetization
+      label: Monetization
+      measures:
+        - {series: paying_users, entity: chatgpt, label: ChatGPT paying consumers}
+        - {series: paying_users, entity: openai_business, label: OpenAI paying business users}
+        - {series: ramp_ai_index, entity: us, label: US businesses paying for AI (Ramp AI Index)}
+  leakage:
+    - {id: conversion, label: ChatGPT paying ÷ weekly users, of: {series: paying_users, entity: chatgpt},
+       per: {series: ai_users, entity: chatgpt}}
+    - {id: work_use, label: US work use ÷ any use, of: {series: genai_adoption, entity: work},
+       per: {series: genai_adoption, entity: all}}

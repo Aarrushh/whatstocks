@@ -1,8 +1,9 @@
 # whatstocks v1 spec (draft)
 
-Status: 2026-11-04. v0.1 built the pipeline; v0.2 added the seven-page
+Status: 2026-11-07. v0.1 built the pipeline; v0.2 added the seven-page
 dashboard (section 3) and conflict scans (section 3.5); v0.3 rebuilds the
-page in React, still as one offline file ([DASHBOARD.md](DASHBOARD.md)).
+page in React, still as one offline file ([DASHBOARD.md](DASHBOARD.md));
+v0.4 adds an eighth page, "Will the bet pay off?", and `/bet` (section 3.6).
 Section 12 records the owner's decisions on the first round of open
 questions.
 
@@ -35,6 +36,18 @@ These are rules, not goals. Each one has a check in code (section 8).
 | P7 | The record is append-only. Probability changes add a new entry, views can be voided but not deleted, and decisions are corrected by adding a new entry. | A record you can rewrite is not a record. |
 | P8 | All data access is read-only. A broker connection is a read-only import or a CSV, never trading credentials. | No path from this tool to an order. |
 
+**Exceptions to P2.** The page itself does arithmetic in one place only, the bet page (section 3.6), and only on
+numbers Python computed. Vitest tests (`web/src/lib/bet.test.ts`) check the sums, the readouts and the clock against
+the figures Python computed for the demo.
+
+- **(a) The cash clock** adds a rate × the seconds since its data date to a total Python computed.
+- **(b) The switches.** The page adds up the pieces of a model that are switched on, and divides two such sums for
+  its readouts (coverage now, payback by the deadline, the valuation target). To show a sum in seats or work hours,
+  or what the need implies (a productivity gain, work hours, a share of the budget pool), it multiplies the sum by a
+  factor Python computed for that slider step.
+
+The regime, the paths and every indicator are computed in Python, never on the page.
+
 ## 3. What the user sees
 
 One self-contained HTML file, `my/out/dashboard.html`, rebuilt by `/morning`
@@ -43,11 +56,13 @@ styles and fonts are inlined, and its Content-Security-Policy blocks every
 request. The page is a React app (`web/`, built into
 `src/whatstocks/assets/dashboard.html`); Python computes the view model and
 puts it into the page as escaped JSON, also written to `out/dashboard.json`.
-The page has seven pages, a command palette, hover tips on every mark, and a
-dark and a light theme. It shows percentages only, never amounts. Every
-chart draws numbers the code computed (P2), and every heat map is a real
-table, so its numbers are there for screen readers. The design rules are in
-[DASHBOARD.md](DASHBOARD.md).
+The page has eight pages, a command palette, hover tips on every mark, and a
+dark and a light theme. It shows your holdings as percentages only, never
+your amounts. (The bet page shows public figures in dollars, such as a
+company's capex or a lab's revenue; none of them is your money.) Every chart
+draws numbers the code computed (P2, with the two exceptions above), and
+every heat map is a real table, so its numbers are there for screen readers.
+The design rules are in [DASHBOARD.md](DASHBOARD.md).
 
 | Page | What it shows |
 |---|---|
@@ -58,6 +73,7 @@ table, so its numbers are there for screen readers. The design rules are in
 | Scenarios | Section 3.5. |
 | Views | Section 3.2. |
 | Record | Section 3.4. |
+| The bet | Section 3.6: "Will the bet pay off?" |
 
 ### 3.1 Morning brief (the News & world page)
 
@@ -160,6 +176,99 @@ and fill strength shows the channel's strength. The code places every label
 inside its bubble, beside it where it overlaps nothing, or else in a list
 under the cluster, so no label lies on top of another.
 
+### 3.6 Will the bet pay off? (the bet page, `/bet`)
+
+AI infrastructure is built like a utility. The cash goes out now, as capex,
+and comes back only as the world adopts AI and pays for it out of IT and
+labour budgets. The page asks one question: is adoption on pace to earn back
+the build-out before the GPUs bought in 2024 to 2026 are written off? It
+fits two models on one chart.
+
+- **Model A, the money invested.** What end users must pay for AI each year
+  for the build-out to pay for itself, worked out like a utility's revenue
+  requirement: depreciation, return on capital and running costs, divided by
+  the compute share (the part of an end-user AI dollar that reaches the
+  infrastructure). And the valuation target: what today's market values
+  assume end users will pay at the deadline.
+- **Model B, adoption.** What end users pay for AI, net, in five tiers by
+  quality (direct, bundled price rises, ad lift, VC-funded, investor-funded
+  compute), with overlapping dollars removed. After the last actual quarter it
+  is projected as usage × price per unit.
+
+The **readouts** are coverage now (actual ÷ need, over the last four
+quarters), payback by the deadline (each added up from 2023 to the deadline),
+and actual against the valuation target. The **deadline** is the depreciation
+clock: the end of 2025 plus the GPU life.
+
+**Controls.** Five sliders (GPU life, cost of capital, price deflation, value
+capture, and the labour share of the budget pool) and a switch for every
+piece of both models. Python computes every slider step for every piece,
+quarterly from 2023Q1 to 2033Q4 with low and high values, so the page only
+picks, adds and divides (exception (b) to P2). A units toggle shows the curves
+in dollars, in paying seats or in work hours.
+
+**Signals.** Four crash paths (capex retrenchment, equity drawdown, credit
+event, price collapse) and adoption pace, each made of indicators with an
+amber and a red level and the reason for each (`sources/bet/signals.yaml`).
+The regime reads **Breaking** when a crash path is red, **Straining** when a
+crash path is amber or adoption pace is red, and **Absorbing** otherwise.
+Python works them out at your default settings, so they stay put while you
+explore. Every state shows a word and a shape (● clear, ◆ amber, ▲ red,
+○ no data). The page shows no probability of a crash and suggests none (P1,
+P6).
+
+**Your reach.** Each crash path has channels, as a scan does (section 3.5),
+and the same code works out the share of your portfolio and of the world
+index each path reaches (P5), with past sell-offs replayed on today's mix.
+
+**Also on the page:** the adoption funnel (who uses AI, how much, who pays,
+and the leakage between them); how much of each curve rests on filed or
+fetched figures, company statements, the press, or estimates; the four
+pillars (capex against revenue, unit economics, net expansion and budgets,
+high-frequency proxies); open-weight model releases with their market and
+adoption effects; historical analogs; every threshold with its reason; every
+series with its newest figure and whether a newer one is due; and a cash
+clock of modelled capex out and demand in since 1 January (exception (a)).
+
+**The ledger.** Every figure the code cannot fetch, each with a source link,
+the date it was read, a grade (filed, company, press or estimate) and a
+low–high range where sources disagree. The shipped ledger is in
+`sources/bet/` (`series.yaml`, `model.yaml`, `signals.yaml`, `events.yaml`).
+Your `my/bet.yaml` is merged on top of it: your figure replaces the shipped
+one with the same series, company and period, `remove:` drops a shipped
+figure, and you can set your own slider defaults, your own amber and red
+levels (with your reason), a path's channels, and `view_links` (which of your
+views a path's changes count for or against). `whatstocks check` checks both.
+
+**What the code fetches**, with each `prepare`: FRED's adoption survey and
+credit spreads (no key) at most once a day, and shares outstanding from Yahoo
+at most once a week. SEC EDGAR (capex, operating cash flow, depreciation,
+backlog, Nvidia's revenue) at most once a week, and only once `settings.yaml`
+has a `sec_contact:`. A fetched figure takes the place of the shipped one for
+the same period (a figure of yours stays), and `whatstocks check` lists any
+more than 1% from the figure it meets.
+
+**In the morning.** When `finish` finds the regime or a path in a new state,
+it appends one line per change to `evidence.jsonl` (`"source": "signal"`),
+counted for or against the views linked in `view_links`. The payload's `bet`
+block holds states and fractions only: no dollar figures, no links and no
+money keys (P4). The brief's `bet` line is required on a day something
+changed (section 8, step 8).
+
+**`/bet`**, on request only:
+
+1. `whatstocks bet due` lists the series with a newer figure due and the open
+   gaps, the ones that move the curves first.
+2. The AI researches from the top of the list, and shows each proposed figure
+   with its source link, grade, date and the figure it replaces.
+3. Only on your yes, it copies `my/bet.yaml` to `my/backups/<date>/` and
+   writes the figures.
+4. `whatstocks check`, then `whatstocks bet`, which works the bet out again
+   from the cache (nothing is fetched), redraws the page and says what moved.
+
+`/bet` never edits `sources/bet/`, never sets a probability, and never raises
+a grade without a better source.
+
 ## 4. User flow
 
 ### 4.1 `/setup` (once, about 15 minutes)
@@ -199,6 +308,7 @@ whatstocks/
   themes/themes.yaml       shipped starter theme map, community-maintained
   sources/funds.yaml       funds that can be looked through, and where their holdings files are
   sources/feeds.yaml       news feeds, and the search used for each theme's news_query
+  sources/bet/             the bet page's shipped ledger: series, model, signals, events (section 3.6)
   demo/                    a complete fictional user, used for first run and tests
     settings.yaml
     holdings.csv
@@ -210,13 +320,16 @@ whatstocks/
     views.yaml
     decisions.yaml
     themes.yaml            optional: the user's additions and overrides
-    cache/                 prices, FX, fund holdings, news
+    bet.yaml               optional: the user's figures, levels and defaults for the bet page
+    cache/                 prices, FX, fund holdings, news, and bet/ (FRED, EDGAR and Yahoo figures)
     out/                   exposure.json, lookthrough.json, performance.json, news.json, payload.json,
-                           brief.json, briefs/<date>.json, evidence.jsonl, scans/, dashboard.html
-  .claude/skills/          setup, morning, scan (decide and resolve are covered inside setup for now)
+                           brief.json, briefs/<date>.json, evidence.jsonl, scans/, bet.json,
+                           bet_state.json, dashboard.html
+  .claude/skills/          setup, morning, scan, bet (decide and resolve are covered inside setup for now)
   src/whatstocks/          code: files, market, funds, exposure, performance, news, brief, record, scan,
                            dashboard (gathers the page's data), geometry (bubble and ripple layout),
-                           render (the view model, filled into assets/dashboard.html), morning, cli
+                           render (the view model, filled into assets/dashboard.html), morning, cli,
+                           and bet/ (ledger, fetch, models, signals, markets, reach, panels)
   web/                     the page: React, built by contributors with Node (DASHBOARD.md)
   tests/                   offline tests with synthetic prices, holdings files and news
 ```
@@ -230,6 +343,8 @@ Commands (the skills run these):
 | `uv run whatstocks finish` | Steps 8 to 11: check `brief.json`, update the evidence log, build the page. `--no-brief` skips the brief. |
 | `uv run whatstocks scan prepare "<conflict>"` | Section 3.5, step 1: search the news, write the scan payload. `--offline` reuses the last search. |
 | `uv run whatstocks scan finish <slug>` | Section 3.5, step 3: check the AI's scan file, compute it, rebuild the page. |
+| `uv run whatstocks bet due` | Section 3.6: the bet ledger's series with a newer figure due, and its open gaps, ranked. |
+| `uv run whatstocks bet` | Section 3.6: work the bet out again from the ledger and `my/bet.yaml` with cached prices and figures (nothing fetched), rebuild the page, and say what moved. |
 
 Every command takes `--dir <folder>` (default `my`), so `--dir demo` runs the demo user.
 
@@ -244,6 +359,8 @@ example of each one.
 ```yaml
 home_currency: EUR        # ISO 4217 code. All values and returns are converted to this.
 benchmark: IUSQ.DE        # The world fund used for every comparison (iShares MSCI ACWI).
+sec_contact: Jane Doe jane@example.com   # Optional. The SEC asks every EDGAR client for a name and email;
+                                         # the bet page fetches nothing from EDGAR without it (section 3.6).
 ```
 
 ### 6.1 `holdings.csv`
@@ -426,14 +543,14 @@ Steps 1 to 6 are `whatstocks prepare`, step 7 is the user's AI, and steps 8 to 1
 | Step | Who | What | Check |
 |---|---|---|---|
 | 1 | code | Load and validate the `my/` files. | Stop with a row or line number on any error. |
-| 2 | code | Refresh prices and FX into the cache. If a source fails, keep the last cached values. | Show a "prices from <date>" banner when any price is older than the last trading day. Stop only when a holding has no cached price at all. |
+| 2 | code | Refresh prices and FX into the cache, and the bet page's fetched figures (section 3.6). If a source fails, keep the last cached values. | Show a "prices from <date>" banner when any price is older than the last trading day. Stop only when a holding has no cached price at all. |
 | 3 | code | Refresh fund holdings files when they are older than 30 days. | Flag files older than 90 days. |
-| 4 | code | Compute exposure (section 7) into `exposure.json`. | Theme shares within [0, 1], and the benchmark computed too. |
+| 4 | code | Compute exposure (section 7) into `exposure.json`, and the bet page (section 3.6) into `bet.json`. | Theme shares within [0, 1], and the benchmark computed too. |
 | 5 | code | Fetch news into `news.json`: the publisher feeds, plus one search per theme built from its `news_query`. Each item gets a stable id (a hash of its URL). | Deduplicate by URL and title. Only theme queries go to the search engine, never holdings or views. |
-| 6 | code | Build the AI payload: news items (id, title, source, time, no URL), tickers with portfolio % and the countries and themes inside each, the themes with your share and the world's (marked `must_cover` at 2% or more, or when an open view names them), and open views (statement, current probability, themes). Also write `performance.json` (price moves) and `lookthrough.json` (the rows a scan needs). | **Payload check**: no money fields, and none of the user's amounts or quantities written anywhere outside public text such as headlines. |
+| 6 | code | Build the AI payload: news items (id, title, source, time, no URL), tickers with portfolio % and the countries and themes inside each, the themes with your share and the world's (marked `must_cover` at 2% or more, or when an open view names them), and open views (statement, current probability, themes), and the bet page's states and fractions (section 3.6). Also write `performance.json` (price moves) and `lookthrough.json` (the rows a scan needs). | **Payload check**: no money fields, and none of the user's amounts or quantities written anywhere outside public text such as headlines. |
 | 7 | AI | Write `brief.json`: a summary; events with `news_ids` and the four answers (`what`, `money`, `touches`, and `views` with `for`, `against` or `unclear` and a `why`); a line per theme that matters; notes on holdings; ripples between themes; things to watch (section 3.1). The format is in `.claude/skills/morning/SKILL.md`. | Checked in step 8. Blind spots are computed in code, not by the AI. |
-| 8 | code | Validate the brief. | Every event, holding note, ripple and thing to watch cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Every `must_cover` theme has a line. At most 10 events, 8 ripples and 8 things to watch; no date to watch in the past. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) anywhere stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. The checked brief is kept in `briefs/<date>.json`. |
-| 9 | code | Append today's events to `evidence.jsonl`. | Earlier days are never changed. A re-run on the same day replaces that day's entries. |
+| 8 | code | Validate the brief. | Every event, holding note, ripple and thing to watch cites at least one `news_id` from today's payload, and only known themes, holdings and open views. Every `must_cover` theme has a line. A `bet` line is there when the payload says a bet path or the regime changed, and cites only today's news ids. At most 10 events, 8 ripples and 8 things to watch; no date to watch in the past. Any URL is an error. Advice-like wording ("you should", "consider buying", price targets and others) anywhere stops the run; the `/morning` skill rewrites once, and only the user can let it through with `--allow-advice`, which adds a warning banner. The checked brief is kept in `briefs/<date>.json`. |
+| 9 | code | Append today's events to `evidence.jsonl`, and a line for each bet path, or the regime, in a new state since the last logged one (section 3.6). | Earlier days are never changed. A re-run on the same day replaces that day's entries. |
 | 10 | code | Render `dashboard.html` (section 3) from the files in `out/`, including any scans: the view model goes into the built template as JSON, and into `dashboard.json`. | The page works offline and its Content-Security-Policy blocks every request. The JSON is escaped so no text can close its script tag, the page writes every text as text, and only http(s) links become links. A test checks the template was built from the current `web/` sources. |
 | 11 | code | Mark the views that are past their `resolves_by` date. | — |
 
@@ -448,8 +565,10 @@ no API key of its own, and the user pays their own model usage.
 | FX | ECB reference rates | Tested OK. Covers EUR crosses only, so other pairs go through EUR. |
 | Fund holdings | Issuer files: iShares tested OK via `/latest-holdings.csv`. Vanguard, SPDR and Invesco are untested. | Formats differ by issuer, so each needs its own parser. Exchange names differ even within one issuer. |
 | News | Publisher RSS feeds (main source), GDELT DOC 2.0 (optional) | 7 RSS feeds tested OK. GDELT rate-limited every request after the first. |
-| Macro, for resolving views | FRED, EIA, national statistics offices | FRED needs a free key. Only used when the user resolves a view. |
-| US company facts | SEC EDGAR | Free, but needs a User-Agent. v2. |
+| Macro, for resolving views | FRED, EIA, national statistics offices | Only used when the user resolves a view. |
+| The bet page's adoption survey and credit spreads | FRED's keyless CSV download (`fredgraph.csv`) | No key. Fetched at most once a day (section 3.6). |
+| US company facts, for the bet page | SEC EDGAR's company-concept API | Free, but the SEC asks for a name and email in the User-Agent: off until `sec_contact:` is set. |
+| Every other bet figure | The ledger in `sources/bet/`: filings, company statements, the press, estimates | Each with a source link and the date it was read ([DATA_SOURCES.md](DATA_SOURCES.md)). |
 
 The default install must work with **no keys at all**. Keys only add sources.
 

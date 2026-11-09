@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { EventCard, WatchList } from "@/components/brief"
 import { Bullet, HeatGrid, ScaleLegend, Timeline, WeekBars, YouWorld, divergeFill, rampFill, type GridRow } from "@/components/charts"
-import { Chip, Empty, HeatDot, Legend, More, PageHeader, Panel, Sources, YOU_WORLD, type PageProps } from "@/components/kit"
+import { Caution, Chip, Empty, HeatDot, Legend, More, PageHeader, Panel, Sources, YOU_WORLD, type PageProps } from "@/components/kit"
 import { RippleMap } from "@/components/maps"
 import { cn } from "@/lib/utils"
 import { heat, pct, plural, prob, pts, RIPPLE_WORD, shortDate } from "@/lib/format"
@@ -36,7 +36,7 @@ function ThemeCard({ theme: t, model, go, max, active }: { theme: Theme; model: 
           </span>
         </div>
       </div>
-      {t.blind && <p className="text-xs text-warn">Blind spot: busy in the news, little of it in your portfolio</p>}
+      {t.blind && <Caution>Blind spot: busy in the news, little of it in your portfolio</Caution>}
       {t.brief ? (
         <div className="flex flex-col gap-2">
           <p className="text-[13px] leading-relaxed">{t.brief.state}</p>

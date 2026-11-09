@@ -7,7 +7,8 @@ model, with every number computed here, in code (P2), and fills the template wit
 Safety: the view model goes into a JSON script tag with <, >, & and the two JavaScript line separators escaped,
 so no text from a feed, a file or the AI can end the tag. The page writes every text as text, and only http(s)
 addresses become links (news links are checked here as well). The template's Content-Security-Policy stops the
-page from fetching or sending anything. The page shows percentages only, never amounts (P4)."""
+page from fetching or sending anything. The page never shows your amounts (P4): your holdings are percentages, and
+the only dollars on it are public companies' and AI labs' figures on "Will the bet pay off?"."""
 from __future__ import annotations
 
 import json
@@ -19,7 +20,7 @@ from .brief import INSIDE_SHARE
 from .files import Problems
 
 PLACEHOLDER = "/*WS_DATA*/"
-VERSION = 3
+VERSION = 4
 NO_BRIEF = "No brief today. Run /morning in Claude Code to have your AI read the news."
 QUIET = "A quiet day: nothing in the news touched your themes, holdings or views."
 CENTRE = "ai_buildout"  # the ripple map puts this theme in the middle when a ripple reaches it
@@ -226,6 +227,16 @@ def _scan(s: dict) -> dict:
     }
 
 
+def _bet(ctx: dict) -> dict | None:
+    """"Will the bet pay off?" (spec 18.3): both models for every slider step, the signals, the markets and the panels
+    (bet.json), with how far each crash path reaches you and the world index (exposure.json, in shares). None before
+    a prepare has written bet.json."""
+    bet = ctx.get("bet")
+    if not bet:
+        return None
+    return {**bet, "reach": ctx["exposure"].get("crash_paths") or {}}
+
+
 def view_model(ctx: dict) -> dict:
     """Everything the page shows. Numbers are computed here or earlier in code; texts stay plain text."""
     brief = ctx["brief"] or {}
@@ -256,4 +267,5 @@ def view_model(ctx: dict) -> dict:
         "watch": _watch_items(ctx),
         "ripples": _ripples(ctx),
         "scans": [_scan(s) for s in ctx["scans"]],
+        "bet": _bet(ctx),
     })

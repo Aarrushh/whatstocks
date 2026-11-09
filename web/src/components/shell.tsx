@@ -1,7 +1,7 @@
 /** The frame around every page: the sidebar on wide screens, a top bar with the pages on narrow ones, the
  * footer and the toast. */
 import { AnimatePresence, motion } from "motion/react"
-import { BookCheck, ChartPie, LayoutDashboard, Moon, Newspaper, Radar, Search, Sun, Target, Wallet, type LucideIcon } from "lucide-react"
+import { BookCheck, ChartPie, LayoutDashboard, Moon, Newspaper, Radar, Scale, Search, Sun, Target, Wallet, type LucideIcon } from "lucide-react"
 import type { MouseEvent } from "react"
 import { Kbd } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -19,6 +19,7 @@ export const PAGE_ICONS: Record<PageId, LucideIcon> = {
   scenarios: Radar,
   views: Target,
   record: BookCheck,
+  bet: Scale,
 }
 
 const MAC = typeof navigator !== "undefined" && /Mac|iPhone|iPad/.test(navigator.userAgent)
@@ -139,10 +140,12 @@ export function Sidebar({ model, page, go, theme, toggleTheme, openPalette }: Sh
         <div className="flex items-center gap-2.5">
           <ThemeButton theme={theme} onClick={toggleTheme} />
           <p className="text-[11px] leading-snug text-ink-3">
-            <Kbd>1</Kbd>–<Kbd>7</Kbd> pages · <Kbd>/</Kbd> search
+            <Kbd>1</Kbd>–<Kbd>{PAGES.length}</Kbd> pages · <Kbd>/</Kbd> search
           </p>
         </div>
-        <p className="text-[11px] leading-relaxed text-ink-3">Percentages only: no amounts leave your computer.</p>
+        <p className="text-[11px] leading-relaxed text-ink-3">
+          Never your amounts: your holdings show as percentages, and no amounts leave your computer.
+        </p>
       </div>
     </aside>
   )

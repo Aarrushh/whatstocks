@@ -13,9 +13,12 @@ import {
   CommandSeparator,
   CommandShortcut,
 } from "@/components/ui/command"
+import { STATE_WORD, figure } from "@/lib/bet"
 import { pct, prob } from "@/lib/format"
 import { PAGES, copyText, type Go, type ThemeName } from "@/lib/hooks"
 import type { Model, Theme } from "@/lib/types"
+import { pathOrder } from "./bet-panels"
+import { StateMark } from "./kit"
 import { PAGE_ICONS } from "./shell"
 
 export function Palette({
@@ -123,6 +126,29 @@ export function Palette({
               ))}
             </CommandGroup>
           )}
+          {model.bet && (
+            <CommandGroup heading="The bet">
+              {pathOrder(model.bet).map((p) => (
+                <CommandItem key={p.id} value={`bet path ${p.label}`} onSelect={run(() => go("bet", p.id))}>
+                  {/* No hidden state word: the shortcut on the right already says it. */}
+                  <StateMark state={p.state} word="" />
+                  <span className="truncate">{p.label}</span>
+                  <CommandShortcut className="tracking-normal">{STATE_WORD[p.state]}</CommandShortcut>
+                </CommandItem>
+              ))}
+              {/* Indicators only once you type, so the list stays short. */}
+              {q &&
+                Object.values(model.bet.signals.indicators).map((ind) => (
+                  <CommandItem key={ind.id} value={`bet indicator ${ind.label} ${ind.id}`} onSelect={run(() => go("bet", ind.id))}>
+                    <StateMark state={ind.state} />
+                    <span className="truncate">{ind.label}</span>
+                    <CommandShortcut className="num tracking-normal">
+                      {ind.reading === null ? STATE_WORD[ind.state] : figure(ind.reading, ind.unit)}
+                    </CommandShortcut>
+                  </CommandItem>
+                ))}
+            </CommandGroup>
+          )}
           <CommandSeparator />
           <CommandGroup heading="Actions" forceMount={q ? true : undefined}>
             <CommandItem value="action switch theme dark light" onSelect={run(toggleTheme)}>
@@ -134,6 +160,12 @@ export function Palette({
               <Copy aria-hidden />
               Copy /morning: have your AI read today's news
             </CommandItem>
+            {model.bet && (
+              <CommandItem value="action copy bet ledger figures due" onSelect={copy("/bet")}>
+                <Copy aria-hidden />
+                Copy /bet: have your AI add the figures that are due
+              </CommandItem>
+            )}
             {q ? (
               <CommandItem forceMount value={`action copy scan ${q}`} onSelect={copy(`/scan ${q}`)}>
                 <Copy aria-hidden />

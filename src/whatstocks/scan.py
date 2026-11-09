@@ -182,10 +182,16 @@ def validate(scan, payload: dict) -> tuple[list[str], list[str]]:
 
 
 def _membership(member: str | None, country: str, channel: dict, themes: ThemeMap) -> float:
-    """How much of one look-through row a channel reaches: 1 for its region, the theme weight for its theme."""
+    """How much of one look-through row a channel reaches: 1 for its region, the theme weight for its theme. A theme
+    tier (ai_buildout:core, as the bet's crash paths use) reaches only the members in that tier."""
     if channel["kind"] == "region":
         return 1.0 if country == channel["id"] else 0.0
-    return themes.weights(member).get(channel["id"], 0.0) if member else 0.0
+    tid, _, tier = channel["id"].partition(":")
+    theme = themes.themes.get(tid)
+    name = themes.member_of(member) if member else None
+    if theme is None or name is None or (tier and name not in getattr(theme, tier)):
+        return 0.0
+    return theme.weight(name)
 
 
 def reach(member: str | None, country: str, channels: list[dict], themes: ThemeMap) -> dict[str, float]:

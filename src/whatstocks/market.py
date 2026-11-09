@@ -10,7 +10,7 @@ from pathlib import Path
 import pandas as pd
 import requests
 
-START = "2019-12-01"
+START = "2018-01-01"  # early enough for the Q4 2018 chip sell-off, which "Will the bet pay off?" replays
 STALE_AFTER_DAYS = 4
 # Quotes in a sub-unit, converted to the main unit on the way into the cache.
 SUBUNITS = {"GBp": ("GBP", 100.0), "GBX": ("GBP", 100.0), "ZAc": ("ZAR", 100.0), "ILA": ("ILS", 100.0)}
@@ -41,7 +41,9 @@ def yahoo_closes(symbols: list[str]) -> dict[str, pd.Series]:
 def yahoo_currency(symbol: str) -> str | None:
     import yfinance as yf
 
-    return yf.Ticker(symbol).fast_info.get("currency")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # as in yahoo_closes
+        return yf.Ticker(symbol).fast_info.get("currency")
 
 
 def ecb_rates(currencies: list[str]) -> pd.DataFrame:

@@ -7,7 +7,7 @@ import { Card, CardAction, CardContent, CardDescription, CardHeader, CardTitle }
 import { cn } from "@/lib/utils"
 import { heat, signed, tone, webUrl } from "@/lib/format"
 import type { Go } from "@/lib/hooks"
-import type { Model, NewsItem } from "@/lib/types"
+import type { BetState, Model, NewsItem } from "@/lib/types"
 
 /** The one spring everything moves on, the press, and the ease for fades. */
 export const SPRING = { type: "spring", stiffness: 380, damping: 30 } as const
@@ -307,7 +307,7 @@ export function Empty({ children, className }: { children: ReactNode; className?
   )
 }
 
-export type SwatchKind = "line" | "dash" | "box" | "tick" | "ring" | "dot"
+export type SwatchKind = "line" | "dash" | "box" | "tick" | "ring" | "dot" | "hatch" | "tri"
 
 export function Swatch({ kind, color }: { kind: SwatchKind; color: string }) {
   switch (kind) {
@@ -331,7 +331,48 @@ export function Swatch({ kind, color }: { kind: SwatchKind; color: string }) {
       return <span aria-hidden className="size-2.5 shrink-0 rounded-full border border-dashed" style={{ borderColor: color }} />
     case "dot":
       return <span aria-hidden className="size-2 shrink-0 rounded-full" style={{ background: color }} />
+    case "hatch":
+      return (
+        <svg width="10" height="10" aria-hidden className="shrink-0 overflow-hidden rounded-[2px]">
+          <rect width="10" height="10" fill={color} fillOpacity="0.12" />
+          <path d="M-2 4 4-2M-2 10 10-2M4 12 12 4" stroke={color} strokeWidth="1" />
+        </svg>
+      )
+    case "tri":
+      return (
+        <svg viewBox="0 0 8 8" aria-hidden className="size-2 shrink-0">
+          <path d="M4 .5 7.5 7.5H.5z" fill={color} />
+        </svg>
+      )
   }
+}
+
+const STATE_WORDS = { clear: "Clear", amber: "Amber", red: "Red", no_data: "No data" } as const
+
+/** A state as a shape and a word, never colour alone: clear ● blue, amber ◆, red ▲, no data ○. The word stays in
+ * ink; without one, the state is read out to screen readers. */
+export function StateMark({ state, word, className }: { state: BetState; word?: ReactNode; className?: string }) {
+  return (
+    <span className={cn("inline-flex items-center gap-1.5 whitespace-nowrap", className)}>
+      <svg viewBox="0 0 8 8" aria-hidden className="size-2 shrink-0">
+        {state === "clear" && <circle cx="4" cy="4" r="3.4" className="fill-pos" />}
+        {state === "amber" && <path d="M4 .2 7.8 4 4 7.8 .2 4z" className="fill-warn" />}
+        {state === "red" && <path d="M4 .5 7.7 7.4H.3z" className="fill-neg" />}
+        {state === "no_data" && <circle cx="4" cy="4" r="3" fill="none" strokeWidth="1.2" className="stroke-ink-3" />}
+      </svg>
+      {word ?? <span className="sr-only">{STATE_WORDS[state]}</span>}
+    </span>
+  )
+}
+
+/** A caution in words: ink text with a small amber mark, since amber is too pale for text in the light theme. */
+export function Caution({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <p className={cn("flex items-start gap-1.5 text-xs text-ink-2", className)}>
+      <TriangleAlert className="mt-px size-3.5 shrink-0 text-warn" aria-hidden />
+      <span className="min-w-0">{children}</span>
+    </p>
+  )
 }
 
 export interface LegendItem {
