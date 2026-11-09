@@ -7,6 +7,11 @@ index fund, and how a conflict would ripple through your holdings. You can
 also write down what you think will happen, and it keeps score of your calls
 over time.
 
+New in v0.4: [Will the bet pay off?](#will-the-bet-pay-off), a page on the
+AI build-out. It sets what the build-out needs to earn back each year
+against what end users actually pay for AI, tracks four ways it could
+crash, and shows how much of your money each one would reach.
+
 It helps you understand the world and your own relationship with it. It never
 tells you what to buy or sell.
 
