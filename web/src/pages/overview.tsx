@@ -3,6 +3,7 @@
 import { CategoryBar, YouWorld, type Segment } from "@/components/charts"
 import { EventCard, WatchList } from "@/components/brief"
 import { Chip, Cmd, Empty, Legend, More, Move, PageHeader, Panel, Stat, SubHead, Ticker, YOU_WORLD, type PageProps } from "@/components/kit"
+import { SectorPanel } from "@/components/sectors"
 import { PriceChart } from "@/components/price-chart"
 import { DASH, heat, longDate, pct, pts } from "@/lib/format"
 import type { Model, Scan, ScanTotals, Theme } from "@/lib/types"
@@ -135,13 +136,14 @@ export function Overview({ model, go }: PageProps) {
       <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
         <Panel
           className="lg:col-span-8"
-          title="Your mix against the world index"
+          title={model.performance.compare?.length ? `Your mix against the world index and ${model.performance.compare.map((c) => c.name).join(", ")}` : "Your mix against the world index"}
           sub={`In ${model.home}, indexed to the start of the window. Prices cover ${pct(model.performance.coverage, 0)} of your portfolio.`}
         >
           <PriceChart
             series={[
               { key: "you", label: "You (today's mix)", points: lines.portfolio ?? [] },
               { key: "world", label: `World index (${model.benchmark})`, points: lines.world ?? [] },
+              ...(model.performance.compare ?? []).map((c) => ({ key: "compare" as const, label: `${c.name} (${c.symbol})`, points: c.line })),
             ]}
           />
         </Panel>
@@ -166,6 +168,8 @@ export function Overview({ model, go }: PageProps) {
           )}
         </Panel>
       </div>
+
+      <SectorPanel model={model} className="mt-3" />
 
       <div className="mt-3 grid grid-cols-1 gap-3 lg:grid-cols-12">
         <Panel

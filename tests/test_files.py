@@ -142,3 +142,17 @@ def test_theme_overlay_adds_removes_and_aliases(tmp_path):
 def test_every_shipped_theme_has_a_news_query():
     themes = load_themes(None, [])
     assert all(t.news_query for t in themes.themes.values())
+
+
+def test_settings_compare_is_optional_and_checked(tmp_path):
+    from whatstocks.files import load_settings
+
+    path = tmp_path / "settings.yaml"
+    path.write_text("home_currency: EUR\nbenchmark: IUSQ.DE\n", "utf-8")
+    problems = []
+    assert load_settings(path, problems).compare == {} and problems == []
+    path.write_text("home_currency: EUR\nbenchmark: IUSQ.DE\ncompare:\n  Nasdaq-100: EQQQ.DE\n", "utf-8")
+    assert load_settings(path, problems).compare == {"Nasdaq-100": "EQQQ.DE"} and problems == []
+    path.write_text("home_currency: EUR\nbenchmark: IUSQ.DE\ncompare: [EQQQ.DE]\n", "utf-8")
+    load_settings(path, problems)
+    assert problems and "compare" in problems[0]

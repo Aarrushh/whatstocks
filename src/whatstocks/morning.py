@@ -18,6 +18,8 @@ from .files import Book, Problems, load_book, read_json, write_json
 from .funds import Funds, Position, listing_country, look_through
 from .market import Fx, Prices
 from .news import fetch_news
+from .sectors import Sectors
+from .sectors import proxies as sector_funds
 from .paths import UserDir
 
 
@@ -75,12 +77,18 @@ def prepare(user: UserDir, offline: bool = False, today: dt.date | None = None) 
     prices, fx = Prices(user.cache), Fx(user.cache)
     held = sorted({h.symbol for h in book.holdings if h.kind != "cash"})
     proxies = {t.proxy for t in book.themes.themes.values()}
-    symbols = sorted(set(held) | proxies | {book.settings.benchmark} | {d.symbol for d in book.decisions})
+    stocks = sorted({h.symbol for h in book.holdings if h.kind == "stock"})
+    sectors = Sectors(user.cache)
+    extra = set(book.settings.compare.values()) | sector_funds()
+    symbols = sorted(set(held) | proxies | {book.settings.benchmark} | {d.symbol for d in book.decisions} | extra)
     notes = []
     if not offline:
         failed = prices.refresh(symbols)
         if failed:
             notes.append(f"Prices not refreshed for {', '.join(failed)}: using cached prices where there are any.")
+        unknown = sectors.refresh(stocks)
+        if unknown:
+            notes.append(f"No sector found for {', '.join(unknown)}: left out of the sector comparison.")
         currencies = {prices.currency(s) for s in symbols} | {h.currency for h in book.holdings if h.value is not None}
         if not fx.refresh({c for c in currencies | {home} if c}):
             notes.append("FX rates not refreshed: using cached rates.")
@@ -114,7 +122,7 @@ def prepare(user: UserDir, offline: bool = False, today: dt.date | None = None) 
         "you": ex.lookthrough_rows(pieces, index),
         "world": ex.lookthrough_rows(bench_pieces, index),
     })
-    _write(user.out / "performance.json", {"date": today.isoformat(), **performance.build(book, dict(weights), series, today)})
+    _write(user.out / "performance.json", {"date": today.isoformat(), **performance.build(book, dict(weights), series, today, sectors.of(stocks))})
 
     news_path = user.out / "news.json"
     if offline:

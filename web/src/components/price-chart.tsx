@@ -10,7 +10,7 @@ import type { Point } from "@/lib/types"
 import { Empty, Move, Segmented, Swatch } from "./kit"
 
 export interface LineSeries {
-  key: "you" | "world"
+  key: "you" | "world" | "compare"
   label: string
   points: Point[]
 }
@@ -18,9 +18,10 @@ export interface LineSeries {
 const STYLE = {
   you: { color: "var(--you)", width: 2, dash: undefined, swatch: "line" },
   world: { color: "var(--world)", width: 1.5, dash: "4 3", swatch: "dash" },
+  compare: { color: "var(--c7)", width: 1.5, dash: "1 3", swatch: "dash" },
 } as const
 
-type Row = { date: string; you?: number; world?: number }
+type Row = { date: string; you?: number; world?: number; compare?: number }
 
 export function PriceChart({ series, height = 240 }: { series: LineSeries[]; height?: number }) {
   const [win, setWin] = useState<WindowId>("1Y")

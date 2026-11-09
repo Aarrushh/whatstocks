@@ -9,6 +9,7 @@ import { EventCard } from "@/components/brief"
 import { BarList, CATEGORICAL, CategoryBar, Spark, type Segment } from "@/components/charts"
 import { Chip, Empty, Legend, Move, PageHeader, Panel, Segmented, Sources, SPRING, SubHead, Swatch, Tag, type PageProps } from "@/components/kit"
 import { PriceChart } from "@/components/price-chart"
+import { SectorPanel } from "@/components/sectors"
 import { pct, plural } from "@/lib/format"
 import type { Go } from "@/lib/hooks"
 import type { Holding, Model, Period, Returns } from "@/lib/types"
@@ -23,7 +24,7 @@ const SORTS: readonly { id: SortKey; label: string }[] = [
   { id: "1Y", label: "1Y" },
 ]
 
-function PeriodTable({ rows }: { rows: { label: string; returns: Returns; kind: "you" | "world" }[] }) {
+function PeriodTable({ rows }: { rows: { label: string; returns: Returns; kind: "you" | "world" | "compare" }[] }) {
   return (
     <div className="relative -mx-1 overflow-x-auto px-1">
       <table className="w-full min-w-[480px] text-[13px]">
@@ -44,7 +45,10 @@ function PeriodTable({ rows }: { rows: { label: string; returns: Returns; kind: 
             <tr key={r.label}>
               <th scope="row" className="py-2 pr-3 text-left font-normal">
                 <span className="inline-flex items-center gap-2">
-                  <Swatch kind={r.kind === "you" ? "line" : "dash"} color={r.kind === "you" ? "var(--you)" : "var(--world)"} />
+                  <Swatch
+                    kind={r.kind === "you" ? "line" : "dash"}
+                    color={r.kind === "you" ? "var(--you)" : r.kind === "compare" ? "var(--c7)" : "var(--world)"}
+                  />
                   {r.label}
                 </span>
               </th>
@@ -360,6 +364,7 @@ export function Holdings({ model, item, go }: PageProps) {
             rows={[
               { label: "You (today's mix)", returns: returns.portfolio ?? {}, kind: "you" },
               { label: `World index (${model.benchmark})`, returns: returns.world ?? {}, kind: "world" },
+              ...(model.performance.compare ?? []).map((c) => ({ label: `${c.name} (${c.symbol})`, returns: c.returns, kind: "compare" as const })),
             ]}
           />
         </Panel>
@@ -367,6 +372,7 @@ export function Holdings({ model, item, go }: PageProps) {
           {model.holdings.length ? <Mix holdings={model.holdings} colour={colour} /> : <Empty>No holdings yet.</Empty>}
         </Panel>
       </div>
+      <SectorPanel model={model} className="mt-3" />
       <Panel
         className="mt-3"
         title="Every holding"

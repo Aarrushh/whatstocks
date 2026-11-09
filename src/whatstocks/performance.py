@@ -104,13 +104,61 @@ def theme_weeks(proxy: pd.Series, world: pd.Series, today: dt.date, weeks: int =
     return [[d.date().isoformat(), round(float(a - b), 5)] for d, (a, b) in both.iterrows()]
 
 
-def build(book, weights: dict[str, float], series: dict[str, pd.Series], today: dt.date) -> dict:
+def _gaps(you: dict, avg: dict) -> dict[str, float | None]:
+    return {p: (you[p] - avg[p]) if you.get(p) is not None and avg.get(p) is not None else None for p, _ in PERIODS}
+
+
+def compare(book, series: dict[str, pd.Series], today: dt.date) -> list[dict]:
+    """Each extra index from settings (for example the Nasdaq-100): its period moves and its line."""
+    out = []
+    for name, symbol in (getattr(book.settings, "compare", None) or {}).items():
+        s = _clean(series.get(symbol, pd.Series(dtype=float)), today)
+        out.append({"name": name, "symbol": symbol,
+                    "returns": changes(s, today) if len(s) > 1 else {},
+                    "line": index_line(_returns(s), today) if len(s) > 1 else []})
+    return out
+
+
+def sector_rows(weights: dict[str, float], series: dict[str, pd.Series], sectors: dict[str, str],
+                today: dt.date) -> list[dict]:
+    """Your stocks grouped by sector: how your stocks in that sector moved, at today's weights inside the sector,
+    against the sector fund (the sector average). Largest sector first."""
+    from .sectors import SECTORS
+
+    groups: dict[str, dict[str, float]] = {}
+    for symbol, sector in sectors.items():
+        if symbol in weights and symbol in series and len(series[symbol]):
+            groups.setdefault(sector, {})[symbol] = weights[symbol]
+    rows = []
+    for sector, members in groups.items():
+        label, fund = SECTORS.get(sector, (sector, None))
+        rets, _ = daily_returns(members, series, set(), today)
+        # A level series that starts at 1 the day before the first return, so the first day's move counts too.
+        level = pd.concat([pd.Series([1.0], index=[rets.index[0] - pd.Timedelta(days=1)]), (1 + rets).cumprod()]) \
+            if len(rets) else pd.Series(dtype=float)
+        you = changes(level, today) if len(level) > 1 else {}
+        proxy = _clean(series.get(fund, pd.Series(dtype=float)), today) if fund else pd.Series(dtype=float)
+        avg = changes(proxy, today) if len(proxy) > 1 else {}
+        rows.append({
+            "id": sector, "label": label, "fund": fund if len(proxy) > 1 else None,
+            "weight": sum(members.values()),
+            "holdings": sorted(members, key=lambda s: -members[s]),
+            "you": you, "average": avg, "gap": _gaps(you, avg),
+            "lines": {"you": index_line(rets, today) if len(rets) else [],
+                      "average": index_line(_returns(proxy), today) if len(proxy) > 1 else []},
+        })
+    return sorted(rows, key=lambda r: -r["weight"])
+
+
+def build(book, weights: dict[str, float], series: dict[str, pd.Series], today: dt.date,
+          sectors: dict[str, str] | None = None) -> dict:
     """Everything the dashboard draws from prices."""
     cash = {h.symbol for h in book.holdings if h.kind == "cash"}
     empty = pd.Series(dtype=float)
     bench = _clean(series.get(book.settings.benchmark, empty), today)
     port, covered = daily_returns(weights, series, cash, today)
     world = _returns(bench) if len(bench) > 1 else empty
+    stocks = {h.symbol for h in book.holdings if h.kind == "stock"}
     held = [s for s in weights if s not in cash and s in series and len(series[s])]
     proxies = sorted({t.proxy for t in book.themes.themes.values()} & set(series))
     return {
@@ -129,4 +177,6 @@ def build(book, weights: dict[str, float], series: dict[str, pd.Series], today: 
             tid: theme_weeks(series[t.proxy], bench, today)
             for tid, t in book.themes.themes.items() if t.proxy in series and len(bench) > 1
         },
+        "compare": compare(book, series, today),
+        "sectors": sector_rows(weights, series, {s: v for s, v in (sectors or {}).items() if s in stocks}, today),
     }

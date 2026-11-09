@@ -5,6 +5,17 @@ export type Share = number
 export type Period = "1D" | "1W" | "1M" | "3M" | "YTD" | "1Y"
 export type Returns = Partial<Record<Period, number | null>>
 export type Point = [string, number]
+export interface Sector {
+  id: string
+  label: string
+  fund: string | null
+  weight: Share
+  holdings: string[]
+  you: Returns
+  average: Returns
+  gap: Returns
+  lines: { you: Point[]; average: Point[] }
+}
 export type Effect = "hurt" | "help" | "mixed"
 export type Strength = "low" | "medium" | "high"
 
@@ -210,6 +221,8 @@ export interface Model {
     coverage: Share | null
     lines: { portfolio?: Point[]; world?: Point[] }
     world_weekly: Point[]
+    compare?: { name: string; symbol: string; returns: Returns; line: Point[] }[]
+    sectors?: Sector[]
   }
   exposure: {
     beta_coverage: Share | null

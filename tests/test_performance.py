@@ -79,3 +79,33 @@ def test_weekly_line_ends_where_the_year_figure_says():
     assert line[0][0] == "2025-11-03" and line[0][1] == 100.0  # the same base as the 1Y change
     assert line[-1][1] / 100 - 1 == pytest.approx(perf.change(s, TODAY, "1Y"), abs=1e-4)
     assert all(dt.date.fromisoformat(d).weekday() == 4 for d, _ in line[1:-1])  # one close a week, on Fridays
+
+
+def test_sectors_compare_your_stocks_with_the_sector_fund():
+    s = {"A": series([100, 110]), "B": series([100, 100]), "C": series([100, 90]),
+         "XDWS.DE": series([100, 102]), "XDWT.DE": series([100, 95])}
+    weights = {"A": 0.3, "B": 0.1, "C": 0.2, "FUND": 0.4}
+    rows = perf.sector_rows(weights, s, {"A": "Consumer Defensive", "B": "Consumer Defensive", "C": "Technology"}, TODAY)
+    staples, tech = rows  # largest share first
+    assert staples["label"] == "Consumer staples" and staples["fund"] == "XDWS.DE"
+    assert staples["weight"] == pytest.approx(0.4) and staples["holdings"] == ["A", "B"]
+    assert staples["you"]["1D"] == pytest.approx(0.075)  # A up 10% at 3/4 of the sector, B flat
+    assert staples["average"]["1D"] == pytest.approx(0.02)
+    assert staples["gap"]["1D"] == pytest.approx(0.055)
+    assert tech["you"]["1D"] == pytest.approx(-0.1) and tech["gap"]["1D"] == pytest.approx(-0.05)
+
+
+def test_a_sector_without_a_fund_shows_no_average():
+    rows = perf.sector_rows({"A": 1.0}, {"A": series([100, 105])}, {"A": "Real Estate"}, TODAY)
+    assert rows[0]["fund"] is None and rows[0]["average"] == {} and rows[0]["gap"]["1D"] is None
+
+
+def test_compare_lists_each_extra_index_from_settings():
+    class Book:
+        class settings:
+            compare = {"Nasdaq-100": "EQQQ.DE", "Missing": "NOPE"}
+
+    out = perf.compare(Book, {"EQQQ.DE": series([100, 104])}, TODAY)
+    assert [c["name"] for c in out] == ["Nasdaq-100", "Missing"]
+    assert out[0]["returns"]["1D"] == pytest.approx(0.04) and out[0]["line"][-1][1] == pytest.approx(104)
+    assert out[1]["returns"] == {} and out[1]["line"] == []

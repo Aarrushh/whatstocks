@@ -41,6 +41,8 @@ def write_json(path: Path, data) -> None:
 class Settings:
     home_currency: str
     benchmark: str
+    # Extra indices to compare your mix with, name -> Yahoo symbol (for example Nasdaq-100: EQQQ.DE).
+    compare: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -200,7 +202,11 @@ def load_settings(path: Path, problems: list[str]) -> Settings:
     benchmark = str(data.get("benchmark") or "")
     if not benchmark:
         problems.append(f"{path.name}: benchmark is missing")
-    return Settings(home, benchmark)
+    compare = data.get("compare") or {}
+    if not isinstance(compare, dict) or not all(str(k).strip() and str(v).strip() for k, v in compare.items()):
+        problems.append(f"{path.name}: compare must be a list of name: symbol lines, for example 'Nasdaq-100: EQQQ.DE'")
+        compare = {}
+    return Settings(home, benchmark, {str(k).strip(): str(v).strip() for k, v in compare.items()})
 
 
 def load_holdings(path: Path, problems: list[str], funds: set[str]) -> list[Holding]:
