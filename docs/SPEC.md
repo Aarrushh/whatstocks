@@ -244,7 +244,14 @@ example of each one.
 ```yaml
 home_currency: EUR        # ISO 4217 code. All values and returns are converted to this.
 benchmark: IUSQ.DE        # The world fund used for every comparison (iShares MSCI ACWI).
+compare:                  # Optional. Extra indices drawn next to your mix on the Overview chart and the
+  Nasdaq-100: EQQQ.DE     # Holdings table, as name: Yahoo symbol. Prices only: they are never looked through.
 ```
+
+Each stock is also compared with its sector (performance.py, sectors.py): the sector comes from Yahoo's company
+profile (cached in `cache/sectors.json`), and the sector average is the Xtrackers MSCI World sector fund in EUR
+(for example `XDWS.DE` for consumer staples). Real estate has no fund in that family and shows no average. Funds
+and cash have no single sector and are left out.
 
 ### 6.1 `holdings.csv`
 

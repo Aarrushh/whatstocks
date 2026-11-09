@@ -1,3 +1,5 @@
 # Demo user. A fictional euro-based investor; not anyone's real portfolio.
 home_currency: EUR
 benchmark: IUSQ.DE   # iShares MSCI ACWI UCITS ETF (Acc), ISIN IE00B6R52259
+compare:                 # extra indices drawn next to your mix (name: Yahoo symbol)
+  Nasdaq-100: EQQQ.DE    # Invesco EQQQ Nasdaq-100 UCITS ETF, in EUR on Xetra
